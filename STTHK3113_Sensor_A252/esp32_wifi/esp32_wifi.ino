@@ -1,20 +1,27 @@
 #include <WiFi.h>
-#include <DHT.h>
 
-#define DHTPIN 4
-#define DHTTYPE DHT11
-
-DHT dht(DHTPIN, DHTTYPE);
-
-// Tukar ikut WiFi anda
+// Replace with your network credentials
 const char* ssid = "myUUM_Guest";
 const char* password = "";
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
+// Set web server port number to 80
+WiFiServer server(80);
+#define LED 2
 
-  dht.begin();
+// Variable to store the HTTP request
+String header;
+
+// Auxiliar variables to store the current output state
+String ledState = "off";
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  // Initialize the output variables as outputs
+  pinMode(LED, OUTPUT);
+
+  // Set outputs to LOW
+  digitalWrite(LED, LOW);
 
   Serial.println("Connecting to WiFi...");
   WiFi.begin(ssid, password);
@@ -31,17 +38,5 @@ void setup() {
 }
 
 void loop() {
-  float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature();
-
-  if (isnan(humidity) || isnan(temperature)) {
-    Serial.println("Gagal membaca data DHT11");
-  } else {
-    Serial.print("Suhu: ");
-    Serial.print(temperature);
-    Serial.print(" °C | Kelembapan: ");
-    Serial.println(humidity);
-  }
-
-  delay(3000);
+  // put your main code here, to run repeatedly:
 }
