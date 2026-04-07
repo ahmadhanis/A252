@@ -1,114 +1,137 @@
-#include <WiFi.h>
+/************************************************************
+ * PROJECT: ESP32 WiFi Web Server (Learning Version)
+ *
+ * DESCRIPTION:
+ * This program demonstrates how the ESP32 connects to a WiFi
+ * network and runs a basic web server that responds to HTTP
+ * requests from a browser.
+ *
+ * LEARNING OBJECTIVES:
+ * - Understand WiFi connection using ESP32 (Station Mode)
+ * - Learn how a web server is implemented on ESP32
+ * - Understand how HTTP requests are received and parsed
+ * - Learn how HTML responses are sent to clients
+ *
+ * KEY CONCEPTS:
+ * - WiFi.begin() → connects ESP32 to router
+ * - WiFiServer → creates server on port 80
+ * - WiFiClient → represents connected user
+ * - HTTP request → read character by character
+ * - HTTP response → send HTML back to browser
+ *
+ ************************************************************/
 
-const char* ssid = "myUUM_Guest";
-const char* password = "";
+#include <WiFi.h>   // Include WiFi library for ESP32
+
+// WiFi credentials (must match your router)
+const char* ssid     = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// Create web server object on port 80 (HTTP default)
 WiFiServer server(80);
-#define LED 2
 
-// Variable to store the HTTP request
+// String to store incoming HTTP request data
 String header;
 
-// Auxiliar variables to store the current output state
-String ledState = "off";
-
 void setup() {
+
+  // Start serial communication for debugging
   Serial.begin(115200);
-  delay(1000);
-  pinMode(LED, OUTPUT);
 
-  // Set outputs to LOW
-  digitalWrite(LED, LOW);
+  /************ WIFI CONNECTION ************/
+  Serial.print("Connecting to WiFi...");
 
-  Serial.println("Connecting to WiFi...");
+  // Attempt to connect to WiFi
   WiFi.begin(ssid, password);
 
-  // Tunggu sampai connect
+  // Wait until connection is established
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
+    delay(500);              // wait 0.5 seconds
+    Serial.print(".");       // show connection progress
   }
 
-  Serial.println("\nWiFi Connected!");
+  Serial.println("\nWiFi connected.");
+
+  // Display ESP32 IP address (used to access server)
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+
+  // Start the web server
   server.begin();
 }
 
-void loop() {
-  WiFiClient client = server.available();  // Listen for incoming clients
+void loop(){
 
-  if (client) {                     // If a new client connects,
-    Serial.println("New Client.");  // print a message out in the serial port
-    String currentLine = "";        // make a String to hold incoming data from the client
-    while (client.connected()) {    // loop while the client's connected
-      if (client.available()) {     // if there's bytes to read from the client,
-        char c = client.read();     // read a byte, then
-        Serial.write(c);            // print it out the serial monitor
-        header += c;
-        if (c == '\n') {  // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
+  // Check if a client (browser/user) is connecting
+  WiFiClient client = server.available();
+
+  // If a new client connects
+  if (client) {
+    Serial.println("New Client connected.");
+
+    String currentLine = "";   // stores current line of request
+
+    // Loop while client remains connected
+    while (client.connected()) {
+
+      // Check if client has sent data
+      if (client.available()) {
+
+        char c = client.read();     // read one character from request
+        Serial.write(c);            // print for debugging
+
+        header += c;                // store full request
+
+        // Detect end of line (newline character)
+        if (c == '\n') {
+
+          // If blank line → end of HTTP request
           if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
+
+            /************ SEND HTTP RESPONSE ************/
+
+            // Send HTTP status code (200 = OK)
             client.println("HTTP/1.1 200 OK");
+
+            // Specify content type as HTML
             client.println("Content-type:text/html");
+
+            // Close connection after response
             client.println("Connection: close");
             client.println();
 
-            // turns the LED 2 on and off
-            if (header.indexOf("GET /LED/on") >= 0) {
-              Serial.println("LED on");
-              ledState = "on";
-              digitalWrite(LED, HIGH);
-            } else if (header.indexOf("GET /LED/off") >= 0) {
-              Serial.println("LED off");
-              ledState = "off";
-              digitalWrite(LED, LOW);
-            }
+            /************ HTML CONTENT ************/
 
-            // Display the HTML web page
+            // Send simple HTML page to browser
             client.println("<!DOCTYPE html><html>");
-            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-            client.println("<link rel=\"icon\" href=\"data:,\">");
-            // CSS to style the on/off buttons
-            // Feel free to change the background-color and font-size attributes to fit your preferences
-            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-            client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
-            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-            client.println(".button2 {background-color: #555555;}</style></head>");
-
-            // Web Page Heading
-            client.println("<body><h1>ESP32 Web Server</h1>");
-
-            // Display current state, and ON/OFF buttons for GPIO 26
-            client.println("<p>LED - State " + ledState + "</p>");
-            // If the output26State is off, it displays the ON button
-            if (ledState == "off") {
-              client.println("<p><a href=\"/LED/on\"><button class=\"button\">ON</button></a></p>");
-            } else {
-              client.println("<p><a href=\"/LED/off\"><button class=\"button button2\">OFF</button></a></p>");
-            }
-
+            client.println("<head><title>ESP32 Web Server</title></head>");
+            client.println("<body>");
+            client.println("<h1>ESP32 Web Server</h1>");
+            client.println("<p>This is a simple response from ESP32</p>");
             client.println("</body></html>");
 
-            // The HTTP response ends with another blank line
-            client.println();
-            // Break out of the while loop
-            break;
-          } else {  // if you got a newline, then clear currentLine
+            client.println();   // end of response
+
+            break;              // exit loop after sending response
+          } 
+          else {
+            // Reset line if not empty
             currentLine = "";
           }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
+        } 
+        else if (c != '\r') {
+          // Add character to current line (ignore carriage return)
+          currentLine += c;
         }
       }
     }
-    // Clear the header variable
+
+    // Clear stored request for next client
     header = "";
-    // Close the connection
+
+    // Close client connection
     client.stop();
+
     Serial.println("Client disconnected.");
-    Serial.println("");
   }
 }
