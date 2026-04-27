@@ -14,9 +14,14 @@ class MyLocationScreen extends StatefulWidget {
 
 class _MyLocationScreenState extends State<MyLocationScreen> {
   List<MyLocation> myLocation = [];
+  late double screenWidth;
 
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth > 600) {
+      screenWidth = 600;
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Locations'),
@@ -32,28 +37,37 @@ class _MyLocationScreenState extends State<MyLocationScreen> {
         ],
       ),
       body: Center(
-        child: myLocation.isEmpty
-            ? Text("No Data Available")
-            : ListView.builder(
-                itemCount: myLocation.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: SizedBox(
-                        width: 100,
-                        child: Image.network(
-                          myLocation[index].imageUrl.toString(),
-                          cacheWidth: 100,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image, size: 50, color: Colors.red),
+        child: SizedBox(
+          width: screenWidth,
+          child: myLocation.isEmpty
+              ? Text("No Data Available", textAlign: TextAlign.center)
+              : ListView.builder(
+                  itemCount: myLocation.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                        leading: SizedBox(
+                          width: 100,
+                          child: Image.network(
+                            myLocation[index].imageUrl.toString(),
+                            cacheWidth: 100,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.red,
+                                ),
+                          ),
                         ),
+                        title: Text(myLocation[index].name.toString()),
+                        subtitle: Text(myLocation[index].state.toString()),
+                        trailing: Text(myLocation[index].rating.toString()),
+                        
                       ),
-                      title: Text(myLocation[index].name.toString()),
-                      subtitle: Text(myLocation[index].state.toString()),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
+        ),
       ),
     );
   }
