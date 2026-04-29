@@ -1,3 +1,5 @@
+import 'package:assethub/views/login_screen.dart';
+import 'package:assethub/views/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
 
@@ -17,6 +19,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
       },
     );
   }
@@ -28,10 +32,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text("Home Screen"),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text("Home Screen")));
   }
 }
