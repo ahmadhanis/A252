@@ -1,6 +1,10 @@
+import 'package:assethub/models/user_model.dart';
+import 'package:assethub/services/api_path.dart';
+import 'package:assethub/views/main_screen.dart';
+import 'package:assethub/views/register_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -11,16 +15,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool rememberMe = false;
-  bool obscurePassword = true;
   bool isLoading = false;
+  String get apiUrl => ApiPath.endpoint("login.php");
 
   // ⚠️ CHANGE BASED ON PLATFORM
-  String apiUrl = "http://localhost/assethub/api/login.php";
   // Android emulator:
   // String apiUrl = "http://10.0.2.2/assethub/api/login.php";
 
@@ -38,10 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (isRemembered) {
       emailController.text = prefs.getString("email") ?? "";
+      passwordController.text = prefs.getString("password") ?? "";
       rememberMe = true;
-
-      // Auto-login (optional)
-      // Navigator.pushReplacementNamed(context, '/home');
     }
 
     setState(() {});
@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      var response = await http.post(
+      final response = await http.post(
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
@@ -72,42 +72,50 @@ class _LoginScreenState extends State<LoginScreen> {
         }),
       );
 
-      var data = jsonDecode(response.body);
-      print("Response: ${response.body}");
-      print(data);
+      if (response.statusCode != 200) {
+        throw Exception("HTTP ${response.statusCode}");
+      }
+
+      final data = jsonDecode(response.body);
+      final userData = data["user"];
+
+      if (data["status"] != "success") {
+        throw Exception(data["message"] ?? "Login failed");
+      }
+
+      if (userData is! Map<String, dynamic>) {
+        throw const FormatException("Invalid user data returned by server");
+      }
+
+      final user = UserModel.fromJson(userData);
 
       setState(() => isLoading = false);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      if (data["status"] == "success") {
-
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-
-        if (rememberMe) {
-          await prefs.setBool("remember_me", true);
-          await prefs.setString("email", emailController.text.trim());
-          await prefs.setString("user_name", data["user"]["name"]);
-          await prefs.setString("user_role", data["user"]["role"]);
-        } else {
-          await prefs.clear();
-        }
-
-        Navigator.pushReplacementNamed(context, '/home');
-
+      if (rememberMe) {
+        await prefs.setBool("remember_me", true);
+        await prefs.setString("email", emailController.text.trim());
+        await prefs.setString("password", passwordController.text);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"]),
-            backgroundColor: Colors.red,
-          ),
-        );
+        await prefs.setBool("remember_me", false);
+        await prefs.remove("email");
+        await prefs.remove("password");
       }
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainScreen(user: user),
+        ),
+      );
 
     } catch (e) {
       setState(() => isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Connection error"),
+        SnackBar(
+          content: Text("Login failed: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -186,18 +194,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 // 🔹 Password
                 TextField(
                   controller: passwordController,
-                  obscureText: obscurePassword,
+                  obscureText: true,
                   decoration: InputDecoration(
                     labelText: "Password",
                     prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off),
-                      onPressed: () {
-                        setState(() => obscurePassword = !obscurePassword);
-                      },
-                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -252,7 +252,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text("Don't have an account? "),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/register');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
+                        );
                       },
                       child: const Text(
                         "Register",

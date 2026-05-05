@@ -1,6 +1,7 @@
+import 'package:assethub/services/api_path.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -10,7 +11,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool obscurePassword = true;
   bool isLoading = false;
+  String get apiUrl => ApiPath.endpoint("register.php");
 
   String? selectedRole;
   final List<String> roles = ["Student", "Lecturer", "Public"];
@@ -34,48 +35,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => isLoading = true);
 
     try {
-      var response = await http.post(
-        Uri.parse("http://localhost/assethub/api/register.php"),
+      final response = await http.post(
+        Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "name": nameController.text,
           "email": emailController.text,
           "password": passwordController.text,
-          "role": selectedRole
+          "role": selectedRole,
         }),
       );
 
-      var data = jsonDecode(response.body);
+     if (response.statusCode != 200) {
+        throw Exception("HTTP ${response.statusCode}");
+      }
+
+      final data = jsonDecode(response.body);
+
+      if (data["status"] != "success") {
+        throw Exception(data["message"] ?? "Registration failed");
+      }
 
       setState(() => isLoading = false);
 
-      if (data["status"] == "success") {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"]),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text((data["message"] ?? "Registration successful").toString()),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-        Navigator.pop(context); // back to login
-
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"]),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      Navigator.pop(context); // back to login
 
     } catch (e) {
       setState(() => isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Connection error"),
+        SnackBar(
+          content: Text("Registration failed: $e"),
           backgroundColor: Colors.red,
         ),
       );

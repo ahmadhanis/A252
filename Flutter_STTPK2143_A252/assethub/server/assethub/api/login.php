@@ -5,29 +5,19 @@ header("Content-Type: application/json");
 date_default_timezone_set('Asia/Kuala_Lumpur');
 require_once "db.php";
 
-// Get POST data (JSON)
 $data = json_decode(file_get_contents("php://input"), true);
 
-// Validate input
-if (
-    empty($data["name"]) ||
-    empty($data["email"]) ||
-    empty($data["password"]) ||
-    empty($data["role"])
-) {
+if (empty($data["email"]) || empty($data["password"])) {
     echo json_encode([
         "status" => "error",
-        "message" => "All fields are required"
+        "message" => "Email and password are required"
     ]);
     exit;
 }
 
-$name = trim($data["name"]);
 $email = trim($data["email"]);
 $password = $data["password"];
-$role = trim($data["role"]);
 
-// Validate email format
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode([
         "status" => "error",
@@ -36,37 +26,26 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Hash password
-$hashed_password = password_hash($password, PASSWORD_DEFAULT);
-$createdAt = date('Y-m-d H:i:s');
-
 try {
-
-    // Check duplicate email
-    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt = $db->prepare("SELECT id, name, email, password, role, created_at FROM users WHERE email = ? LIMIT 1");
     $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($stmt->fetch()) {
+    if (!$user || !password_verify($password, $user["password"])) {
         echo json_encode([
             "status" => "error",
-            "message" => "Email already registered"
+            "message" => "Invalid email or password"
         ]);
         exit;
     }
 
-    // Insert user
-    $stmt = $db->prepare("
-        INSERT INTO users (name, email, password, role, created_at)
-        VALUES (?, ?, ?, ?, ?)
-    ");
-
-    $stmt->execute([$name, $email, $hashed_password, $role, $createdAt]);
+    unset($user["password"]);
 
     echo json_encode([
         "status" => "success",
-        "message" => "Registration successful"
+        "message" => "Login successful",
+        "user" => $user
     ]);
-
 } catch (PDOException $e) {
     echo json_encode([
         "status" => "error",

@@ -1,3 +1,4 @@
+import 'package:assethub/views/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -16,7 +17,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Delay 3 seconds then navigate
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/login');
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ),
+      );
     });
   }
 
