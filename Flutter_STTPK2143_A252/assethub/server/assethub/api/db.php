@@ -19,6 +19,19 @@ try {
         )
     ");
 
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            price REAL NOT NULL,
+            description TEXT,
+            image TEXT,
+            created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+        )
+    ");
+
 } catch (PDOException $e) {
     die(json_encode([
         "status" => "error",

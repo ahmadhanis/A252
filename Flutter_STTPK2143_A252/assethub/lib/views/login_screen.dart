@@ -1,9 +1,10 @@
+import 'dart:convert';
+
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/services/api_path.dart';
 import 'package:assethub/views/main_screen.dart';
 import 'package:assethub/views/register_screen.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,17 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   String get apiUrl => ApiPath.endpoint("login.php");
 
-  // ⚠️ CHANGE BASED ON PLATFORM
-  // Android emulator:
-  // String apiUrl = "http://10.0.2.2/assethub/api/login.php";
-
   @override
+  // Load saved login details when the screen opens.
   void initState() {
     super.initState();
     loadRememberedUser();
   }
 
-  // 🔁 LOAD SAVED SESSION
+  // Fill the form if the user chose "Remember Me" before.
   Future<void> loadRememberedUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -47,9 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {});
   }
 
-  // 🔐 LOGIN FUNCTION
+  // Send the login request and move to the main screen if successful.
   Future<void> loginUser() async {
-
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -105,11 +102,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => MainScreen(user: user),
-        ),
+        MaterialPageRoute(builder: (context) => MainScreen(user: user)),
       );
-
     } catch (e) {
       setState(() => isLoading = false);
 
@@ -122,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Adjust the form width for different screen sizes.
   double getResponsiveWidth(double width) {
     if (width > 900) return 400;
     if (width > 600) return 500;
@@ -129,147 +124,136 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  // Build the login page layout.
   Widget build(BuildContext context) {
-
-    double width = MediaQuery.of(context).size.width;
-    double formWidth = getResponsiveWidth(width);
+    final mediaQuery = MediaQuery.of(context);
+    final width = mediaQuery.size.width;
+    final availableHeight =
+        mediaQuery.size.height -
+        mediaQuery.padding.top -
+        mediaQuery.padding.bottom -
+        mediaQuery.viewInsets.bottom;
+    final formWidth = getResponsiveWidth(width);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            width: formWidth,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: width > 600
-                  ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
-                  : [],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                // 🔹 Logo
-                Center(
-                  child: Image.asset('assets/logo.png', width: 100),
-                ),
-
-                const SizedBox(height: 25),
-
-                const Text(
-                  "Welcome Back",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                const Text(
-                  "Login to continue",
-                  style: TextStyle(color: Colors.grey),
-                ),
-
-                const SizedBox(height: 25),
-
-                // 🔹 Email
-                TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    labelText: "Email",
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+      body: SizedBox(
+        height: availableHeight > 0 ? availableHeight : null,
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              width: formWidth,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: width > 600
+                    ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
+                    : [],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(child: Image.asset('assets/logo.png', width: 100)),
+                  const SizedBox(height: 25),
+                  const Text(
+                    "Welcome Back",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E3A8A),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 15),
-
-                // 🔹 Password
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.lock),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Login to continue",
+                    style: TextStyle(color: Colors.grey),
                   ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // 🔹 Remember Me
-                Row(
-                  children: [
-                    Checkbox(
-                      value: rememberMe,
-                      onChanged: (value) {
-                        setState(() => rememberMe = value!);
-                      },
-                    ),
-                    const Text("Remember Me"),
-                  ],
-                ),
-
-                const SizedBox(height: 15),
-
-                // 🔹 Login Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                  const SizedBox(height: 25),
+                  TextField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      prefixIcon: const Icon(Icons.email),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: isLoading ? null : loginUser,
-                    child: isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Login",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // 🔹 Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account? "),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Register",
-                        style: TextStyle(
-                          color: Color(0xFFFACC15),
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      prefixIcon: const Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: rememberMe,
+                        onChanged: (value) {
+                          setState(() => rememberMe = value!);
+                        },
+                      ),
+                      const Flexible(child: Text("Remember Me")),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                    )
-                  ],
-                ),
-              ],
+                      onPressed: isLoading ? null : loginUser,
+                      child: isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text(
+                              "Login",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account? "),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Register",
+                          style: TextStyle(
+                            color: Color(0xFFFACC15),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
