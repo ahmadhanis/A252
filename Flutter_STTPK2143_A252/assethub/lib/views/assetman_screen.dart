@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:assethub/models/asset_model.dart';
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/services/api_path.dart';
+import 'package:assethub/views/asset_report_screen.dart';
 import 'package:assethub/widgets/mydrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,21 +22,50 @@ class AssetmanScreen extends StatefulWidget {
 }
 
 class _AssetmanScreenState extends State<AssetmanScreen> {
+  static const int itemsPerPage = 10;
+  static const List<String> assetCategories = [
+    'Electronic',
+    'Hardware',
+    'Tool',
+    'Machine',
+    'Computer',
+    'Peripheral',
+    '3D Printing',
+    'Laser Cutting',
+    'CNC',
+    'Hand Tool',
+    'Power Tool',
+    'Measuring Equipment',
+    'Safety Equipment',
+    'Furniture',
+    'Material',
+    'Consumable',
+    'Robotics',
+    'IoT Device',
+    'Audio Visual',
+    'Storage',
+  ];
+
   File? imageFile;
   late double screenHeight;
   late double screenWidth;
   List<AssetModel> assets = [];
   bool isLoading = true;
+  int currentPage = 1;
+  int totalItems = 0;
+  int totalPages = 1;
   String get insertApiUrl => ApiPath.endpoint("insert_asset.php");
   String get loadApiUrl => ApiPath.endpoint("load_assets.php");
   String get updateApiUrl => ApiPath.endpoint("update_asset.php");
   String get deleteApiUrl => ApiPath.endpoint("delete_asset.php");
-  
+
   TextEditingController assetNameController = TextEditingController();
   TextEditingController quantityController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-  String selectedCategory = 'Electronic';
+  TextEditingController searchController = TextEditingController();
+  String selectedCategory = assetCategories.first;
+  String selectedFilterCategory = 'All';
 
   @override
   void initState() {
@@ -49,6 +79,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     quantityController.dispose();
     priceController.dispose();
     descriptionController.dispose();
+    searchController.dispose();
     super.dispose();
   }
 
@@ -57,54 +88,23 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     screenHeight = MediaQuery.of(context).size.height;
     screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(title: const Text("Assets Management")),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : assets.isEmpty
-          ? const Center(child: Text("No assets available"))
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: assets.length,
-              itemBuilder: (context, index) {
-                final asset = assets[index];
-                final imageName = asset.image;
-                final imageUrl = imageName.isNotEmpty
-                    ? '${ApiPath.baseUrl.replaceFirst('/api', '')}/uploads/assets/$imageName'
-                    : null;
-                //  print("Asset Image URL: $imageUrl");
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    onTap: () {
-                      showAssetDetailsDialog(asset);
-                    },
-                    leading: imageUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              imageUrl,
-                              width: 56,
-                              height: 56,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.inventory_2, size: 40),
-                            ),
-                          )
-                        : const Icon(Icons.inventory_2, size: 40),
-                    title: Text(asset.name),
-                    subtitle: Text(
-                      '${asset.category} | Qty: ${asset.quantity} | RM ${asset.price}',
-                    ),
-                    trailing: IconButton(
-                      onPressed: () {
-                        showAssetMenuDialog(asset);
-                      },
-                      icon: const Icon(Icons.arrow_forward_ios),
-                    ),
-                  ),
-                );
-              },
-            ),
+      appBar: AppBar(
+        title: const Text("Assets Management"),
+        actions: [
+          IconButton(
+            tooltip: 'Asset Report',
+            onPressed: openAssetReportScreen,
+            icon: const Icon(Icons.summarize_outlined),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildSearchSection(),
+          Expanded(child: _buildAssetsContent()),
+          if (!isLoading) _buildPaginationControls(),
+        ],
+      ),
       drawer: MyDrawer(user: widget.user),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -195,17 +195,14 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                           labelText: 'Asset Category',
                         ),
                         initialValue: selectedCategory,
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Electronic',
-                            child: Text('Electronic'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Hardware',
-                            child: Text('Hardware'),
-                          ),
-                          DropdownMenuItem(value: 'Tool', child: Text('Tool')),
-                        ],
+                        items: assetCategories
+                            .map(
+                              (category) => DropdownMenuItem(
+                                value: category,
+                                child: Text(category),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setDialogState(() {
                             selectedCategory = value!;
@@ -337,13 +334,197 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     );
   }
 
-  Future<void> loadAssets() async {
+  Widget _buildSearchSection() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Column(
+        children: [
+          TextField(
+            controller: searchController,
+            textInputAction: TextInputAction.search,
+            onChanged: (_) {
+              setState(() {});
+            },
+            onSubmitted: (_) => applyFilters(),
+            decoration: InputDecoration(
+              labelText: 'Search assets',
+              hintText: 'Name, category or description',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: searchController.text.isNotEmpty
+                  ? IconButton(
+                      onPressed: () {
+                        searchController.clear();
+                        applyFilters();
+                      },
+                      icon: const Icon(Icons.clear),
+                    )
+                  : null,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: selectedFilterCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter by category',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['All', ...assetCategories]
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedFilterCategory = value ?? 'All';
+                    });
+                    applyFilters();
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: applyFilters,
+                child: const Text('Search'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssetsContent() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (assets.isEmpty) {
+      return const Center(child: Text('No assets found'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+      itemCount: assets.length,
+      itemBuilder: (context, index) {
+        final asset = assets[index];
+        final imageName = asset.image;
+        final imageUrl = imageName.isNotEmpty
+            ? '${ApiPath.baseUrl.replaceFirst('/api', '')}/uploads/assets/$imageName'
+            : null;
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            onTap: () {
+              showAssetDetailsDialog(asset);
+            },
+            leading: imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      imageUrl,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const Icon(Icons.inventory_2, size: 40),
+                    ),
+                  )
+                : const Icon(Icons.inventory_2, size: 40),
+            title: Text(asset.name),
+            subtitle: Text(
+              '${asset.category} | Qty: ${asset.quantity} | RM ${asset.price}',
+            ),
+            trailing: IconButton(
+              onPressed: () {
+                showAssetMenuDialog(asset);
+              },
+              icon: const Icon(Icons.arrow_forward_ios),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaginationControls() {
+    final startItem = totalItems == 0
+        ? 0
+        : ((currentPage - 1) * itemsPerPage) + 1;
+    final endItem = totalItems == 0 ? 0 : startItem + assets.length - 1;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Showing $startItem-$endItem of $totalItems'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                onPressed: currentPage > 1
+                    ? () => loadAssets(page: currentPage - 1)
+                    : null,
+                child: (Icon(Icons.arrow_back_ios_new_outlined)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('Page $currentPage / $totalPages'),
+              ),
+              OutlinedButton(
+                onPressed: currentPage < totalPages
+                    ? () => loadAssets(page: currentPage + 1)
+                    : null,
+                child: (Icon(Icons.arrow_forward_ios_outlined)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> applyFilters() async {
+    currentPage = 1;
+    await loadAssets(page: 1);
+  }
+
+  void openAssetReportScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AssetReportScreen()),
+    );
+  }
+
+  Future<void> loadAssets({int? page}) async {
+    final pageToLoad = page ?? currentPage;
+
     setState(() {
       isLoading = true;
     });
 
     try {
-      final response = await http.get(Uri.parse(loadApiUrl));
+      final uri = Uri.parse(loadApiUrl).replace(
+        queryParameters: {
+          'page': pageToLoad.toString(),
+          'limit': itemsPerPage.toString(),
+          'search': searchController.text.trim(),
+          'category': selectedFilterCategory,
+        },
+      );
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         log('Load Assets Response: $data');
@@ -355,6 +536,9 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
           );
           setState(() {
             assets = loadedAssets;
+            totalItems = data['total_items'] ?? loadedAssets.length;
+            totalPages = data['total_pages'] ?? 1;
+            currentPage = data['current_page'] ?? pageToLoad;
           });
         } else {
           throw Exception(data['message'] ?? 'Failed to load assets');
@@ -481,7 +665,8 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                         const SnackBar(content: Text('Asset inserted')),
                       );
                       resetAssetForm();
-                      await loadAssets();
+                      currentPage = 1;
+                      await loadAssets(page: 1);
                       if (!mounted) return;
                       navigator.pop();
                       Navigator.of(context).pop();
@@ -638,17 +823,14 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                           labelText: 'Asset Category',
                         ),
                         initialValue: selectedCategory,
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'Electronic',
-                            child: Text('Electronic'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Hardware',
-                            child: Text('Hardware'),
-                          ),
-                          DropdownMenuItem(value: 'Tool', child: Text('Tool')),
-                        ],
+                        items: assetCategories
+                            .map(
+                              (category) => DropdownMenuItem(
+                                value: category,
+                                child: Text(category),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           setDialogState(() {
                             selectedCategory = value!;
@@ -800,10 +982,10 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     descriptionController.clear();
     if (mounted) {
       setState(() {
-        selectedCategory = 'Electronic';
+        selectedCategory = assetCategories.first;
       });
     } else {
-      selectedCategory = 'Electronic';
+      selectedCategory = assetCategories.first;
     }
   }
 

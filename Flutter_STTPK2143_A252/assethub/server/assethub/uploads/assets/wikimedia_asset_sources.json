@@ -1,0 +1,366 @@
+[
+  {
+    "asset_id": 4,
+    "asset_name": "Arduino Uno R3 Kit",
+    "filename": "asset_4_arduino_uno_r3_kit.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Arduino_Uno_-_R3.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/3/38/Arduino_Uno_-_R3.jpg"
+  },
+  {
+    "asset_id": 5,
+    "asset_name": "Raspberry Pi 4 Model B",
+    "filename": "asset_5_raspberry_pi_4_model_b.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Raspberry_Pi_4_Model_B_-_Top.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/1/10/Raspberry_Pi_4_Model_B_-_Top.jpg"
+  },
+  {
+    "asset_id": 16,
+    "asset_name": "Digital Multimeter",
+    "filename": "asset_16_digital_multimeter.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Digital_Multimeter_Aka.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Digital_Multimeter_Aka.jpg"
+  },
+  {
+    "asset_id": 17,
+    "asset_name": "Oscilloscope 100MHz",
+    "filename": "asset_17_oscilloscope_100mhz.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Digital_oscilloscope.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Digital_oscilloscope.jpg"
+  },
+  {
+    "asset_id": 21,
+    "asset_name": "Cordless Drill",
+    "filename": "asset_21_cordless_drill.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Cordless_Drill_-_unbranded.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Cordless_Drill_-_unbranded.jpg"
+  },
+  {
+    "asset_id": 28,
+    "asset_name": "Safety Goggles",
+    "filename": "asset_28_safety_goggles.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Safety_Goggles.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/0/0a/Safety_Goggles.jpg"
+  },
+  {
+    "asset_id": 33,
+    "asset_name": "Projector Portable",
+    "filename": "asset_33_projector_portable.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Projector_in_frame.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Projector_in_frame.jpg"
+  },
+  {
+    "asset_id": 34,
+    "asset_name": "USB Webcam HD",
+    "filename": "asset_34_usb_webcam_hd.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Webcam_on_computer_screen.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Webcam_on_computer_screen.jpg"
+  },
+  {
+    "asset_id": 35,
+    "asset_name": "Mechanical Keyboard",
+    "filename": "asset_35_mechanical_keyboard.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Mechanical_Keyboard.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Mechanical_Keyboard.jpg"
+  },
+  {
+    "asset_id": 36,
+    "asset_name": "24 Inch Monitor",
+    "filename": "asset_36_24_inch_monitor.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Computer_monitor.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Computer_monitor.jpg"
+  },
+  {
+    "asset_id": 6,
+    "asset_name": "ESP32 Development Board",
+    "filename": "asset_6_esp32_development_board.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:ESP32_Dev_Board.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/ESP32_Dev_Board.jpg/960px-ESP32_Dev_Board.jpg"
+  },
+  {
+    "asset_id": 18,
+    "asset_name": "Soldering Station",
+    "filename": "asset_18_soldering_station.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Soldering_Station_375A%2B.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/8/82/Soldering_Station_375A%2B.jpg"
+  },
+  {
+    "asset_id": 19,
+    "asset_name": "Desoldering Pump",
+    "filename": "asset_19_desoldering_pump.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Desoldering_pump.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Desoldering_pump.jpg/960px-Desoldering_pump.jpg"
+  },
+  {
+    "asset_id": 20,
+    "asset_name": "Hot Glue Gun",
+    "filename": "asset_20_hot_glue_gun.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Hot_glue_gun_pro.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Hot_glue_gun_pro.jpg/960px-Hot_glue_gun_pro.jpg"
+  },
+  {
+    "asset_id": 23,
+    "asset_name": "Precision Screwdriver Set",
+    "filename": "asset_23_precision_screwdriver_set.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Electronic_Precision_Screwdriver_Set.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Electronic_Precision_Screwdriver_Set.jpg/960px-Electronic_Precision_Screwdriver_Set.jpg"
+  },
+  {
+    "asset_id": 27,
+    "asset_name": "Wire Stripper",
+    "filename": "asset_27_wire_stripper.png",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Wire_stripper.png",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Wire_stripper.png/960px-Wire_stripper.png"
+  },
+  {
+    "asset_id": 40,
+    "asset_name": "Servo Motor Pack",
+    "filename": "asset_40_servo_motor_pack.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Servomotor_01.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Servomotor_01.jpg/960px-Servomotor_01.jpg"
+  },
+  {
+    "asset_id": 41,
+    "asset_name": "Stepper Motor NEMA17",
+    "filename": "asset_41_stepper_motor_nema17.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Nema_17_Stepper_Motor.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Nema_17_Stepper_Motor.jpg/960px-Nema_17_Stepper_Motor.jpg"
+  },
+  {
+    "asset_id": 42,
+    "asset_name": "Ultrasonic Sensor Module",
+    "filename": "asset_42_ultrasonic_sensor_module.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:HC-SR04_ultrasonic_distance_sensor_module_pcb.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/HC-SR04_ultrasonic_distance_sensor_module_pcb.jpg/960px-HC-SR04_ultrasonic_distance_sensor_module_pcb.jpg"
+  },
+  {
+    "asset_id": 45,
+    "asset_name": "Jumper Wire Set",
+    "filename": "asset_45_jumper_wire_set.png",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Cjam-jumper-wires.png",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Cjam-jumper-wires.png"
+  },
+  {
+    "asset_id": 3,
+    "asset_name": "Soldering Iron Set",
+    "filename": "asset_3_soldering_iron_set.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:2023_Lutownica_transformatorowa_Lutola_6B.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/2023_Lutownica_transformatorowa_Lutola_6B.jpg/960px-2023_Lutownica_transformatorowa_Lutola_6B.jpg"
+  },
+  {
+    "asset_id": 14,
+    "asset_name": "Mini CNC Router",
+    "filename": "asset_14_mini_cnc_router.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:A_DIY_CNC_Machine_Router.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/A_DIY_CNC_Machine_Router.jpg/960px-A_DIY_CNC_Machine_Router.jpg"
+  },
+  {
+    "asset_id": 22,
+    "asset_name": "Rotary Tool Kit",
+    "filename": "asset_22_rotary_tool_kit.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Dremel_4200_-_2018-01-31_(3).jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Dremel_4200_-_2018-01-31_%283%29.jpg/960px-Dremel_4200_-_2018-01-31_%283%29.jpg"
+  },
+  {
+    "asset_id": 24,
+    "asset_name": "Allen Key Set",
+    "filename": "asset_24_allen_key_set.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Allen_long_arm_hex_key_set.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Allen_long_arm_hex_key_set.jpg/960px-Allen_long_arm_hex_key_set.jpg"
+  },
+  {
+    "asset_id": 25,
+    "asset_name": "Adjustable Spanner",
+    "filename": "asset_25_adjustable_spanner.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Adjustable_spanner_20101109.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Adjustable_spanner_20101109.jpg/960px-Adjustable_spanner_20101109.jpg"
+  },
+  {
+    "asset_id": 26,
+    "asset_name": "Needle Nose Pliers",
+    "filename": "asset_26_needle_nose_pliers.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Basic_NeedleNose_Pliers.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Basic_NeedleNose_Pliers.jpg/960px-Basic_NeedleNose_Pliers.jpg"
+  },
+  {
+    "asset_id": 29,
+    "asset_name": "Cut Resistant Gloves",
+    "filename": "asset_29_cut_resistant_gloves.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Level_3A_glove.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Level_3A_glove.jpg/960px-Level_3A_glove.jpg"
+  },
+  {
+    "asset_id": 30,
+    "asset_name": "Ear Protection Muff",
+    "filename": "asset_30_ear_protection_muff.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Over_the_head_earmuffs_and_other_ear_protection_gear_in_German_hardware_store_(cropped).jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Over_the_head_earmuffs_and_other_ear_protection_gear_in_German_hardware_store_%28cropped%29.jpg"
+  },
+  {
+    "asset_id": 31,
+    "asset_name": "Fire Extinguisher CO2",
+    "filename": "asset_31_fire_extinguisher_co2.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:CO2_Extinguisher_Trolley_Mounted_HMS_Albion.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/CO2_Extinguisher_Trolley_Mounted_HMS_Albion.jpg/960px-CO2_Extinguisher_Trolley_Mounted_HMS_Albion.jpg"
+  },
+  {
+    "asset_id": 53,
+    "asset_name": "Label Printer",
+    "filename": "asset_53_label_printer.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Label_maker_example_digitalgadget.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Label_maker_example_digitalgadget.jpg"
+  },
+  {
+    "asset_id": 15,
+    "asset_name": "CNC End Mill Set",
+    "filename": "asset_15_cnc_end_mill_set.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:MillingCutterSlotEndMillBallnose.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/MillingCutterSlotEndMillBallnose.jpg/960px-MillingCutterSlotEndMillBallnose.jpg"
+  },
+  {
+    "asset_id": 32,
+    "asset_name": "First Aid Kit",
+    "filename": "asset_32_first_aid_kit.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:First_Aid_Kit_(Frankfurt_am_Main,_18.02.2012).jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/First_Aid_Kit_%28Frankfurt_am_Main%2C_18.02.2012%29.jpg/960px-First_Aid_Kit_%28Frankfurt_am_Main%2C_18.02.2012%29.jpg"
+  },
+  {
+    "asset_id": 39,
+    "asset_name": "Robotics Chassis Kit",
+    "filename": "asset_39_robotics_chassis_kit.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Robot_chassis_at_MIT_Flea_2022.agr.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Robot_chassis_at_MIT_Flea_2022.agr.jpg/960px-Robot_chassis_at_MIT_Flea_2022.agr.jpg"
+  },
+  {
+    "asset_id": 44,
+    "asset_name": "Breadboard 830 Tie Points",
+    "filename": "asset_44_breadboard_830_tie_points.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:BREB-02_(14335226011).jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/BREB-02_%2814335226011%29.jpg/960px-BREB-02_%2814335226011%29.jpg"
+  },
+  {
+    "asset_id": 46,
+    "asset_name": "Power Supply Module",
+    "filename": "asset_46_power_supply_module.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:ESP-01_WiFi_Breadboard_Project.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/ESP-01_WiFi_Breadboard_Project.jpg/960px-ESP-01_WiFi_Breadboard_Project.jpg"
+  },
+  {
+    "asset_id": 48,
+    "asset_name": "Storage Bin Large",
+    "filename": "asset_48_storage_bin_large.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Stackable_storage_bin_model_3_160_by_Danish_company_Raaco.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Stackable_storage_bin_model_3_160_by_Danish_company_Raaco.jpg/960px-Stackable_storage_bin_model_3_160_by_Danish_company_Raaco.jpg"
+  },
+  {
+    "asset_id": 50,
+    "asset_name": "Work Bench Heavy Duty",
+    "filename": "asset_50_work_bench_heavy_duty.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:CH.ZG.Zug_Museum-Burg-Zug_shoemaker%27s-workbench-around-1930.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/CH.ZG.Zug_Museum-Burg-Zug_shoemaker%27s-workbench-around-1930.jpg/960px-CH.ZG.Zug_Museum-Burg-Zug_shoemaker%27s-workbench-around-1930.jpg"
+  },
+  {
+    "asset_id": 51,
+    "asset_name": "Cutting Mat A2",
+    "filename": "asset_51_cutting_mat_a2.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:HK_TKL_%E8%AA%BF%E6%99%AF%E5%B6%BA_Tiu_Keng_Leng_%E6%98%8E%E6%84%9B%E7%99%BD%E8%8B%B1%E5%A5%87_CBCC_CIHE_%E5%9C%96%E6%9B%B8%E9%A4%A8_Library_June_2018_IX2_Double_Side_PVC_Cutting_Board_Carving_Plate_Incision_Subplate_Deck_Self_Healing_Cutting_Mat_02.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/HK_TKL_%E8%AA%BF%E6%99%AF%E5%B6%BA_Tiu_Keng_Leng_%E6%98%8E%E6%84%9B%E7%99%BD%E8%8B%B1%E5%A5%87_CBCC_CIHE_%E5%9C%96%E6%9B%B8%E9%A4%A8_Library_June_2018_IX2_Double_Side_PVC_Cutting_Board_Carving_Plate_Incision_Subplate_Deck_Self_Healing_Cutting_Mat_02.jpg/960px-thumbnail.jpg"
+  },
+  {
+    "asset_id": 52,
+    "asset_name": "Caliper Digital",
+    "filename": "asset_52_caliper_digital.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:2020_Suwmiarka_cyfrowa.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/2020_Suwmiarka_cyfrowa.jpg/960px-2020_Suwmiarka_cyfrowa.jpg"
+  },
+  {
+    "asset_id": 38,
+    "asset_name": "Desktop CAD PC",
+    "filename": "asset_38_desktop_cad_pc.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Amiga500_system.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Amiga500_system.jpg/960px-Amiga500_system.jpg"
+  },
+  {
+    "asset_id": 2,
+    "asset_name": "Kitchen Hood",
+    "filename": "asset_2_kitchen_hood.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:California_Kitchen_Range_Hood.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/California_Kitchen_Range_Hood.jpg/960px-California_Kitchen_Range_Hood.jpg"
+  },
+  {
+    "asset_id": 7,
+    "asset_name": "3D Printer PLA Black 1kg",
+    "filename": "asset_7_3d_printer_pla_black_1kg.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640983874.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640983874.jpg/960px-Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640983874.jpg"
+  },
+  {
+    "asset_id": 8,
+    "asset_name": "3D Printer PLA White 1kg",
+    "filename": "asset_8_3d_printer_pla_white_1kg.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640984986.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640984986.jpg/960px-Split_filament_spool_holder_for_MakerBot_Replicator_3D_printer_-_8640984986.jpg"
+  },
+  {
+    "asset_id": 9,
+    "asset_name": "ABS Filament 1kg",
+    "filename": "asset_9_abs_filament_1kg.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:ABS_filament_spool.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ABS_filament_spool.jpg/960px-ABS_filament_spool.jpg"
+  },
+  {
+    "asset_id": 12,
+    "asset_name": "Acrylic Sheet 3mm",
+    "filename": "asset_12_acrylic_sheet_3mm.png",
+    "source_page": "https://commons.wikimedia.org/wiki/File:PMMA_acrylic_glass.png",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/e/e2/PMMA_acrylic_glass.png"
+  },
+  {
+    "asset_id": 13,
+    "asset_name": "Plywood Sheet 3mm",
+    "filename": "asset_13_plywood_sheet_3mm.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Plywood.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Plywood.jpg/960px-Plywood.jpg"
+  },
+  {
+    "asset_id": 37,
+    "asset_name": "Laptop Workstation",
+    "filename": "asset_37_laptop_workstation.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:EFTA00000884_-_Computer_workstation_featuring_a_laptop_keyboard_mouse_and_multiple_monitors_on_a_light-colored_desk.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/EFTA00000884_-_Computer_workstation_featuring_a_laptop_keyboard_mouse_and_multiple_monitors_on_a_light-colored_desk.jpg/960px-EFTA00000884_-_Computer_workstation_featuring_a_laptop_keyboard_mouse_and_multiple_monitors_on_a_light-colored_desk.jpg"
+  },
+  {
+    "asset_id": 43,
+    "asset_name": "IR Sensor Module",
+    "filename": "asset_43_ir_sensor_module.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Infrared_Transceiver_Circuit.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/d/da/Infrared_Transceiver_Circuit.jpg"
+  },
+  {
+    "asset_id": 47,
+    "asset_name": "Ethernet Cable 5m",
+    "filename": "asset_47_ethernet_cable_5m.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Assemblaggio_cavo_RJ45_passo_1.jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Assemblaggio_cavo_RJ45_passo_1.jpg/960px-Assemblaggio_cavo_RJ45_passo_1.jpg"
+  },
+  {
+    "asset_id": 49,
+    "asset_name": "Metal Shelving Rack",
+    "filename": "asset_49_metal_shelving_rack.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Skeleton_of_the_shelving_units._(bc9f24f7-155d-451f-67af-6aad2d5c6462).jpg",
+    "source_image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Skeleton_of_the_shelving_units._%28bc9f24f7-155d-451f-67af-6aad2d5c6462%29.jpg/960px-Skeleton_of_the_shelving_units._%28bc9f24f7-155d-451f-67af-6aad2d5c6462%29.jpg"
+  },
+  {
+    "asset_id": 10,
+    "asset_name": "Resin Printing Resin 500ml",
+    "filename": "asset_10_resin_printing_resin_500ml.png",
+    "source_page": "generated://openai-imagegen",
+    "source_image": "C:\\Users\\slumb\\.codex\\generated_images\\019e57fc-674a-7710-9f29-7c5792ea5ec9\\ig_0f7f21ab22e74cc7016a128e51a3dc81919bf8ab92ffd7795e.png"
+  },
+  {
+    "asset_id": 11,
+    "asset_name": "Laser Cutter Honeycomb Bed",
+    "filename": "asset_11_laser_cutter_honeycomb_bed.png",
+    "source_page": "generated://openai-imagegen",
+    "source_image": "C:\\Users\\slumb\\.codex\\generated_images\\019e57fc-674a-7710-9f29-7c5792ea5ec9\\ig_0f7f21ab22e74cc7016a128f11e7e08191acba738d11bda93c.png"
+  }
+]

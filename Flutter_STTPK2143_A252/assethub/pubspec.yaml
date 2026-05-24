@@ -34,6 +34,8 @@ dependencies:
   http: ^1.6.0
   image_cropper: ^12.2.1
   image_picker: ^1.2.2
+  pdf: ^3.11.3
+  printing: ^5.14.2
   shared_preferences: ^2.5.5
 
 dev_dependencies:

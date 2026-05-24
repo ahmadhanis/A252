@@ -1,9 +1,9 @@
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/views/assetman_screen.dart';
 import 'package:assethub/views/login_screen.dart';
+import 'package:assethub/views/loanman_screen.dart';
 import 'package:assethub/views/main_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MyDrawer extends StatefulWidget {
   final UserModel user;
@@ -61,6 +61,19 @@ class _MyDrawerState extends State<MyDrawer> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => AssetmanScreen(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.assignment_return_outlined),
+              title: const Text("Loan Management"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LoanmanScreen(user: widget.user),
                   ),
                 );
               },
