@@ -12,6 +12,7 @@ $data = json_decode(file_get_contents("php://input"), true);
 if (
     empty($data["name"]) ||
     empty($data["email"]) ||
+    empty($data["phone"]) ||
     empty($data["password"]) ||
     empty($data["role"])
 ) {
@@ -24,6 +25,7 @@ if (
 
 $name = trim($data["name"]);
 $email = trim($data["email"]);
+$phone = trim($data["phone"]);
 $password = $data["password"];
 $role = trim($data["role"]);
 
@@ -32,6 +34,14 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode([
         "status" => "error",
         "message" => "Invalid email format"
+    ]);
+    exit;
+}
+
+if (!preg_match('/^[0-9+\-\s]{8,20}$/', $phone)) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Invalid phone number format"
     ]);
     exit;
 }
@@ -56,11 +66,11 @@ try {
 
     // Insert user
     $stmt = $db->prepare("
-        INSERT INTO users (name, email, password, role, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO users (name, email, phone, password, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
 
-    $stmt->execute([$name, $email, $hashed_password, $role, $createdAt]);
+    $stmt->execute([$name, $email, $phone, $hashed_password, $role, $createdAt]);
 
     echo json_encode([
         "status" => "success",

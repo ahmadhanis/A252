@@ -54,6 +54,9 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
   int currentPage = 1;
   int totalItems = 0;
   int totalPages = 1;
+  int summaryVisibleItems = 0;
+  int summaryStockCount = 0;
+  double summaryTotalValue = 0;
   String get insertApiUrl => ApiPath.endpoint("insert_asset.php");
   String get loadApiUrl => ApiPath.endpoint("load_assets.php");
   String get updateApiUrl => ApiPath.endpoint("update_asset.php");
@@ -88,6 +91,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     screenHeight = MediaQuery.of(context).size.height;
     screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text("Assets Management"),
         actions: [
@@ -100,7 +104,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
       ),
       body: Column(
         children: [
-          _buildSearchSection(),
+          _buildTopSection(),
           Expanded(child: _buildAssetsContent()),
           if (!isLoading) _buildPaginationControls(),
         ],
@@ -111,6 +115,198 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
           showNewAssetDialog();
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildTopSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Column(
+        children: [
+          _buildOverviewBanner(),
+          const SizedBox(height: 8),
+          _buildQuickStats(),
+          const SizedBox(height: 8),
+          _buildSearchSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1D4ED8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Makerspace Asset Center',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Track equipment, materials, and tools in one place.',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Colors.white.withValues(alpha: 0.82),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _buildHeaderPill(
+                Icons.inventory_2_outlined,
+                '$totalItems assets',
+              ),
+              _buildHeaderPill(
+                Icons.category_outlined,
+                selectedFilterCategory == 'All'
+                    ? 'All categories'
+                    : selectedFilterCategory,
+              ),
+              _buildHeaderPill(
+                Icons.manage_search_outlined,
+                searchController.text.trim().isEmpty
+                    ? 'No active search'
+                    : 'Filtered results',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return SizedBox(
+      height: 88,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          SizedBox(
+            width: 138,
+            child: _buildStatCard(
+              'Visible Items',
+              summaryVisibleItems.toString(),
+              Icons.view_list_outlined,
+              const Color(0xFFDBEAFE),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 138,
+            child: _buildStatCard(
+              'Stock Count',
+              summaryStockCount.toString(),
+              Icons.layers_outlined,
+              const Color(0xFFDCFCE7),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 152,
+            child: _buildStatCard(
+              'Total Value',
+              'RM ${summaryTotalValue.toStringAsFixed(2)}',
+              Icons.payments_outlined,
+              const Color(0xFFFEF3C7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color iconBackground,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 13,
+            backgroundColor: iconBackground,
+            child: Icon(icon, size: 16, color: const Color(0xFF1E3A8A)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 1),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 10.5, color: Colors.black54),
+          ),
+        ],
       ),
     );
   }
@@ -336,41 +532,51 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
 
   Widget _buildSearchSection() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Column(
-        children: [
-          TextField(
-            controller: searchController,
-            textInputAction: TextInputAction.search,
-            onChanged: (_) {
-              setState(() {});
-            },
-            onSubmitted: (_) => applyFilters(),
-            decoration: InputDecoration(
-              labelText: 'Search assets',
-              hintText: 'Name, category or description',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchController.text.isNotEmpty
-                  ? IconButton(
-                      onPressed: () {
-                        searchController.clear();
-                        applyFilters();
-                      },
-                      icon: const Icon(Icons.clear),
-                    )
-                  : null,
-              border: const OutlineInputBorder(),
-            ),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
-          const SizedBox(height: 10),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tune_outlined, size: 18, color: Color(0xFF1E3A8A)),
+              SizedBox(width: 6),
+              Text(
+                'Search and Filter',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
+                flex: 5,
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: selectedFilterCategory,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Filter by category',
-                    border: OutlineInputBorder(),
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                   ),
                   items: ['All', ...assetCategories]
                       .map(
@@ -389,9 +595,58 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              ElevatedButton(
+              Expanded(
+                flex: 7,
+                child: TextField(
+                  controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (_) {
+                    setState(() {});
+                  },
+                  onSubmitted: (_) => applyFilters(),
+                  decoration: InputDecoration(
+                    labelText: 'Search assets',
+                    hintText: 'Name, category or description',
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.search),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    suffixIcon: searchController.text.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              searchController.clear();
+                              applyFilters();
+                            },
+                            icon: const Icon(Icons.clear),
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton(
                 onPressed: applyFilters,
-                child: const Text('Search'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  minimumSize: const Size(0, 44),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Icon(Icons.search),
               ),
             ],
           ),
@@ -418,38 +673,160 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
         final imageUrl = imageName.isNotEmpty
             ? '${ApiPath.baseUrl.replaceFirst('/api', '')}/uploads/assets/$imageName'
             : null;
+        final stockColor = asset.quantity <= 2
+            ? const Color(0xFFB91C1C)
+            : asset.quantity <= 5
+            ? const Color(0xFFB45309)
+            : const Color(0xFF166534);
+
         return Card(
+          color: Colors.white,
+          elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
             onTap: () {
               showAssetDetailsDialog(asset);
             },
-            leading: imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      imageUrl,
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.inventory_2, size: 40),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: 82,
+                      height: 82,
+                      color: const Color(0xFFF1F5F9),
+                      child: imageUrl != null
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.inventory_2_outlined,
+                                size: 34,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.inventory_2_outlined,
+                              size: 34,
+                            ),
                     ),
-                  )
-                : const Icon(Icons.inventory_2, size: 40),
-            title: Text(asset.name),
-            subtitle: Text(
-              '${asset.category} | Qty: ${asset.quantity} | RM ${asset.price}',
-            ),
-            trailing: IconButton(
-              onPressed: () {
-                showAssetMenuDialog(asset);
-              },
-              icon: const Icon(Icons.arrow_forward_ios),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                asset.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: () {
+                                showAssetMenuDialog(asset);
+                              },
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.more_horiz),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildAssetTag(
+                              asset.category,
+                              const Color(0xFFDBEAFE),
+                              const Color(0xFF1D4ED8),
+                            ),
+                            _buildAssetTag(
+                              'Qty ${asset.quantity}',
+                              stockColor.withValues(alpha: 0.12),
+                              stockColor,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          asset.description.isEmpty
+                              ? 'No description available'
+                              : asset.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.payments_outlined,
+                              size: 16,
+                              color: Color(0xFF1E3A8A),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'RM ${asset.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                showAssetDetailsDialog(asset);
+                              },
+                              child: const Text('View Details'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAssetTag(String label, Color backgroundColor, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
     );
   }
 
@@ -463,31 +840,43 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: const Color(0xFFF8FAFC),
         border: Border(top: BorderSide(color: Colors.grey.shade300)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Showing $startItem-$endItem of $totalItems'),
+          Text(
+            'Showing $startItem-$endItem of $totalItems',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               OutlinedButton(
                 onPressed: currentPage > 1
                     ? () => loadAssets(page: currentPage - 1)
                     : null,
-                child: (Icon(Icons.arrow_back_ios_new_outlined)),
+                child: const Icon(Icons.arrow_back_ios_new_outlined),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
                 child: Text('Page $currentPage / $totalPages'),
               ),
               OutlinedButton(
                 onPressed: currentPage < totalPages
                     ? () => loadAssets(page: currentPage + 1)
                     : null,
-                child: (Icon(Icons.arrow_forward_ios_outlined)),
+                child: const Icon(Icons.arrow_forward_ios_outlined),
               ),
             ],
           ),
@@ -534,11 +923,18 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
               (asset) => AssetModel.fromJson(Map<String, dynamic>.from(asset)),
             ),
           );
+          final totals = await _loadAssetSummary(
+            firstPageData: data,
+            firstPageAssets: loadedAssets,
+          );
           setState(() {
             assets = loadedAssets;
             totalItems = data['total_items'] ?? loadedAssets.length;
             totalPages = data['total_pages'] ?? 1;
             currentPage = data['current_page'] ?? pageToLoad;
+            summaryVisibleItems = totals.itemCount;
+            summaryStockCount = totals.stockCount;
+            summaryTotalValue = totals.totalValue;
           });
         } else {
           throw Exception(data['message'] ?? 'Failed to load assets');
@@ -1049,4 +1445,71 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
       messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
+
+  Future<_AssetSummaryTotals> _loadAssetSummary({
+    required Map<String, dynamic> firstPageData,
+    required List<AssetModel> firstPageAssets,
+  }) async {
+    final totalPagesFromApi = (firstPageData['total_pages'] as num?)?.toInt() ?? 1;
+    final collectedAssets = <AssetModel>[...firstPageAssets];
+
+    if (totalPagesFromApi > 1) {
+      for (int page = 2; page <= totalPagesFromApi; page++) {
+        final pageUri = Uri.parse(loadApiUrl).replace(
+          queryParameters: {
+            'page': page.toString(),
+            'limit': '100',
+            'search': searchController.text.trim(),
+            'category': selectedFilterCategory,
+          },
+        );
+        final response = await http.get(pageUri);
+        if (response.statusCode != 200) {
+          throw Exception('Failed to load asset summary page $page');
+        }
+
+        final data = jsonDecode(response.body);
+        if (data['status'] != 'success') {
+          throw Exception(
+            data['message'] ?? 'Failed to load asset summary page $page',
+          );
+        }
+
+        collectedAssets.addAll(
+          List<AssetModel>.from(
+            (data['assets'] ?? []).map(
+              (asset) => AssetModel.fromJson(Map<String, dynamic>.from(asset)),
+            ),
+          ),
+        );
+      }
+    }
+
+    final stockCount = collectedAssets.fold<int>(
+      0,
+      (sum, asset) => sum + asset.quantity,
+    );
+    final totalValue = collectedAssets.fold<double>(
+      0,
+      (sum, asset) => sum + (asset.quantity * asset.price),
+    );
+
+    return _AssetSummaryTotals(
+      itemCount: (firstPageData['total_items'] as num?)?.toInt() ?? collectedAssets.length,
+      stockCount: stockCount,
+      totalValue: totalValue,
+    );
+  }
+}
+
+class _AssetSummaryTotals {
+  final int itemCount;
+  final int stockCount;
+  final double totalValue;
+
+  const _AssetSummaryTotals({
+    required this.itemCount,
+    required this.stockCount,
+    required this.totalValue,
+  });
 }

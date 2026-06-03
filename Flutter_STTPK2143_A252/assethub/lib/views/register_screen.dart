@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
@@ -54,8 +55,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "name": nameController.text,
-          "email": emailController.text,
+          "name": nameController.text.trim(),
+          "email": emailController.text.trim(),
+          "phone": phoneController.text.trim(),
           "password": passwordController.text,
           "role": selectedRole,
         }),
@@ -189,6 +191,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: "Email",
                           icon: Icons.email,
                         ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 15),
+                      TextField(
+                        controller: phoneController,
+                        decoration: _buildFieldDecoration(
+                          labelText: "Phone Number",
+                          icon: Icons.phone_outlined,
+                        ),
+                        keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 15),
                       TextField(
@@ -260,6 +272,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text("Please select a role"),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  if (phoneController.text.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Please enter your phone number",
+                                        ),
                                         backgroundColor: Colors.red,
                                       ),
                                     );

@@ -29,6 +29,18 @@ if ($userId <= 0 || $assetId <= 0 || $quantity <= 0 || $purpose === "" || $loanD
 }
 
 try {
+    $userStmt = $db->prepare("SELECT phone FROM users WHERE id = ? LIMIT 1");
+    $userStmt->execute([$userId]);
+    $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        throw new RuntimeException("User not found");
+    }
+
+    if (trim((string) ($user["phone"] ?? "")) === "") {
+        throw new RuntimeException("Phone number is required before requesting a loan");
+    }
+
     $assetStmt = $db->prepare("SELECT quantity FROM assets WHERE id = ? LIMIT 1");
     $assetStmt->execute([$assetId]);
     $asset = $assetStmt->fetch(PDO::FETCH_ASSOC);

@@ -11,6 +11,7 @@ class LoanRequestModel {
   final String createdAt;
   final String userName;
   final String userEmail;
+  final String userPhone;
   final String assetName;
   final String assetCategory;
   final String approvedByName;
@@ -30,6 +31,7 @@ class LoanRequestModel {
     required this.createdAt,
     required this.userName,
     required this.userEmail,
+    required this.userPhone,
     required this.assetName,
     required this.assetCategory,
     required this.approvedByName,
@@ -51,6 +53,7 @@ class LoanRequestModel {
       createdAt: (json["created_at"] ?? "").toString(),
       userName: (json["user_name"] ?? "").toString(),
       userEmail: (json["user_email"] ?? "").toString(),
+      userPhone: (json["user_phone"] ?? "").toString(),
       assetName: (json["asset_name"] ?? "").toString(),
       assetCategory: (json["asset_category"] ?? "").toString(),
       approvedByName: (json["approved_by_name"] ?? "").toString(),

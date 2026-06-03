@@ -2,6 +2,7 @@ class UserModel {
   final int id;
   final String name;
   final String email;
+  final String phone;
   final String role;
   final String createdAt;
 
@@ -9,6 +10,7 @@ class UserModel {
     required this.id,
     required this.name,
     required this.email,
+    required this.phone,
     required this.role,
     required this.createdAt,
   });
@@ -18,6 +20,7 @@ class UserModel {
       id: int.tryParse(json["id"].toString()) ?? 0,
       name: (json["name"] ?? "").toString(),
       email: (json["email"] ?? "").toString(),
+      phone: (json["phone"] ?? "").toString(),
       role: (json["role"] ?? "").toString(),
       createdAt: (json["created_at"] ?? "").toString(),
     );
@@ -28,6 +31,7 @@ class UserModel {
       "id": id,
       "name": name,
       "email": email,
+      "phone": phone,
       "role": role,
       "created_at": createdAt,
     };

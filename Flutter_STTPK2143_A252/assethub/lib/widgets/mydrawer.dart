@@ -3,6 +3,7 @@ import 'package:assethub/views/assetman_screen.dart';
 import 'package:assethub/views/login_screen.dart';
 import 'package:assethub/views/loanman_screen.dart';
 import 'package:assethub/views/main_screen.dart';
+import 'package:assethub/views/servicereq_screen.dart';
 import 'package:flutter/material.dart';
 
 class MyDrawer extends StatefulWidget {
@@ -74,6 +75,19 @@ class _MyDrawerState extends State<MyDrawer> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => LoanmanScreen(user: widget.user),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.design_services_outlined),
+              title: const Text("Service Requests"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ServicereqScreen(user: widget.user),
                   ),
                 );
               },

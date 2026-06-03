@@ -17,42 +17,34 @@ try {
 
     $sql = "
         SELECT
-            lr.id,
-            lr.user_id,
-            lr.asset_id,
-            lr.quantity,
-            lr.purpose,
-            lr.loan_date,
-            lr.due_date,
-            lr.status,
-            lr.admin_notes,
-            lr.approved_by,
-            lr.approved_at,
-            lr.returned_at,
-            lr.created_at,
+            sr.id,
+            sr.user_id,
+            sr.service_type,
+            sr.title,
+            sr.details,
+            sr.preferred_date,
+            sr.status,
+            sr.admin_notes,
+            sr.created_at,
+            sr.updated_at,
             u.name AS user_name,
             u.email AS user_email,
-            u.phone AS user_phone,
-            a.name AS asset_name,
-            a.category AS asset_category,
-            approver.name AS approved_by_name
-        FROM loan_requests lr
-        INNER JOIN users u ON u.id = lr.user_id
-        INNER JOIN assets a ON a.id = lr.asset_id
-        LEFT JOIN users approver ON approver.id = lr.approved_by
+            u.phone AS user_phone
+        FROM service_requests sr
+        INNER JOIN users u ON u.id = sr.user_id
     ";
 
     if (strcasecmp($role, "Admin") !== 0 && $userId > 0) {
-        $sql .= " WHERE lr.user_id = :user_id";
+        $sql .= " WHERE sr.user_id = :user_id";
     }
 
-    $sql .= " ORDER BY CASE lr.status
+    $sql .= " ORDER BY CASE sr.status
         WHEN 'Pending' THEN 1
-        WHEN 'Approved' THEN 2
-        WHEN 'Rejected' THEN 3
-        WHEN 'Returned' THEN 4
+        WHEN 'In Progress' THEN 2
+        WHEN 'Completed' THEN 3
+        WHEN 'Rejected' THEN 4
         ELSE 5
-    END, lr.created_at DESC";
+    END, sr.created_at DESC";
 
     $stmt = $db->prepare($sql);
     if (strcasecmp($role, "Admin") !== 0 && $userId > 0) {
@@ -62,7 +54,7 @@ try {
 
     echo json_encode([
         "status" => "success",
-        "loans" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+        "services" => $stmt->fetchAll(PDO::FETCH_ASSOC)
     ]);
 } catch (Throwable $e) {
     http_response_code(500);

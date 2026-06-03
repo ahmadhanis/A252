@@ -4,10 +4,12 @@ import 'dart:developer';
 import 'package:assethub/models/asset_model.dart';
 import 'package:assethub/models/loan_request_model.dart';
 import 'package:assethub/models/user_model.dart';
+import 'package:assethub/views/loan_report_screen.dart';
 import 'package:assethub/services/api_path.dart';
 import 'package:assethub/widgets/mydrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class LoanmanScreen extends StatefulWidget {
   final UserModel user;
@@ -20,16 +22,19 @@ class LoanmanScreen extends StatefulWidget {
 
 class _LoanmanScreenState extends State<LoanmanScreen> {
   final List<LoanRequestModel> loanRequests = [];
+  final List<AssetModel> allAssets = [];
   final List<AssetModel> availableAssets = [];
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController purposeController = TextEditingController();
   final TextEditingController adminNotesController = TextEditingController();
+  final TextEditingController loanSearchController = TextEditingController();
 
   bool isLoading = true;
   bool isSubmitting = false;
   int? selectedAssetId;
   DateTime? selectedLoanDate;
   DateTime? selectedDueDate;
+  String selectedStatusFilter = 'All';
 
   bool get isAdmin => widget.user.role.toLowerCase() == 'admin';
   String get loadLoanApiUrl => ApiPath.endpoint("load_loan_requests.php");
@@ -48,15 +53,24 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     quantityController.dispose();
     purposeController.dispose();
     adminNotesController.dispose();
+    loanSearchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredLoans = _getFilteredLoans();
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text("Loan Management"),
         actions: [
+          IconButton(
+            onPressed: openLoanReportScreen,
+            tooltip: 'Loan Report',
+            icon: const Icon(Icons.summarize_outlined),
+          ),
           IconButton(
             onPressed: loadLoanData,
             tooltip: 'Refresh',
@@ -76,82 +90,156 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                _buildSummaryCards(),
+                _buildTopSection(filteredLoans.length),
                 Expanded(
-                  child: loanRequests.isEmpty
+                  child: filteredLoans.isEmpty
                       ? const Center(child: Text('No loan requests found'))
                       : ListView.builder(
                           padding: const EdgeInsets.all(12),
-                          itemCount: loanRequests.length,
+                          itemCount: filteredLoans.length,
                           itemBuilder: (context, index) {
-                            final loan = loanRequests[index];
+                            final loan = filteredLoans[index];
+                            final statusColor = _statusColor(loan.status);
+                            final imageUrl = _assetImageUrl(loan.assetId);
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                loan.assetName,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () {
+                                  showLoanDetailsDialog(loan);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          width: 82,
+                                          height: 82,
+                                          color: const Color(0xFFF1F5F9),
+                                          child: imageUrl != null
+                                              ? Image.network(
+                                                  imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, _, _) =>
+                                                      Icon(
+                                                        _statusIcon(
+                                                          loan.status,
+                                                        ),
+                                                        size: 34,
+                                                        color: statusColor,
+                                                      ),
+                                                )
+                                              : Icon(
+                                                  _statusIcon(loan.status),
+                                                  size: 34,
+                                                  color: statusColor,
                                                 ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '${loan.assetCategory} | Qty: ${loan.quantity}',
-                                              ),
-                                            ],
-                                          ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        _buildStatusChip(loan.status),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildLoanDetailRow(
-                                      'Member',
-                                      '${loan.userName} (${loan.userEmail})',
-                                    ),
-                                    _buildLoanDetailRow(
-                                      'Loan Period',
-                                      '${loan.loanDate} until ${loan.dueDate}',
-                                    ),
-                                    _buildLoanDetailRow('Purpose', loan.purpose),
-                                    _buildLoanDetailRow(
-                                      'Admin Notes',
-                                      loan.adminNotes.isEmpty
-                                          ? '-'
-                                          : loan.adminNotes,
-                                    ),
-                                    if (loan.approvedByName.isNotEmpty)
-                                      _buildLoanDetailRow(
-                                        'Approved By',
-                                        loan.approvedByName,
                                       ),
-                                    if (loan.returnedAt.isNotEmpty)
-                                      _buildLoanDetailRow(
-                                        'Returned At',
-                                        loan.returnedAt,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    loan.assetName,
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                _buildStatusChip(loan.status),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                _buildLoanTag(
+                                                  loan.assetCategory,
+                                                  const Color(0xFFDBEAFE),
+                                                  const Color(0xFF1D4ED8),
+                                                ),
+                                                _buildLoanTag(
+                                                  'Qty ${loan.quantity}',
+                                                  statusColor.withValues(
+                                                    alpha: 0.12,
+                                                  ),
+                                                  statusColor,
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            _buildCompactDetailRow(
+                                              icon: Icons.person_outline,
+                                              label:
+                                                  '${loan.userName} | ${loan.userPhone.isEmpty ? '-' : loan.userPhone}',
+                                            ),
+                                            const SizedBox(height: 6),
+                                            _buildCompactDetailRow(
+                                              icon: Icons.date_range_outlined,
+                                              label:
+                                                  '${loan.loanDate} to ${loan.dueDate}',
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              loan.purpose,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.black54,
+                                                height: 1.3,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    showLoanDetailsDialog(loan);
+                                                  },
+                                                  child: const Text(
+                                                    'View Details',
+                                                  ),
+                                                ),
+                                                const Spacer(),
+                                                Wrap(
+                                                  alignment:
+                                                      WrapAlignment.end,
+                                                  spacing: 6,
+                                                  runSpacing: 6,
+                                                  children:
+                                                      _buildActionButtons(loan),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    const SizedBox(height: 12),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: _buildActionButtons(loan),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -160,6 +248,105 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildTopSection(int visibleCount) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Column(
+        children: [
+          _buildOverviewBanner(visibleCount),
+          const SizedBox(height: 10),
+          _buildSummaryCards(),
+          const SizedBox(height: 10),
+          _buildFilterCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewBanner(int visibleCount) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1D4ED8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isAdmin ? 'Loan Approval Center' : 'My Loan Requests',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isAdmin
+                ? 'Review requests, contact borrowers, and update statuses.'
+                : 'Track your request progress and borrowing history.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.82),
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _buildHeaderPill(Icons.list_alt_outlined, '$visibleCount visible'),
+              _buildHeaderPill(
+                Icons.filter_alt_outlined,
+                selectedStatusFilter == 'All'
+                    ? 'All statuses'
+                    : selectedStatusFilter,
+              ),
+              _buildHeaderPill(
+                Icons.search_outlined,
+                loanSearchController.text.trim().isEmpty
+                    ? 'No search'
+                    : 'Search active',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderPill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -175,14 +362,14 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         .length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: EdgeInsets.zero,
       child: SizedBox(
-        height: 120,
+        height: 84,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
             SizedBox(
-              width: 220,
+              width: 176,
               child: _buildInfoCard(
                 'Pending Requests',
                 pendingCount.toString(),
@@ -191,7 +378,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
             ),
             const SizedBox(width: 12),
             SizedBox(
-              width: 220,
+              width: 176,
               child: _buildInfoCard(
                 'Approved Loans',
                 approvedCount.toString(),
@@ -200,7 +387,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
             ),
             const SizedBox(width: 12),
             SizedBox(
-              width: 220,
+              width: 156,
               child: _buildInfoCard(
                 'Returned',
                 returnedCount.toString(),
@@ -215,27 +402,46 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title),
-                  const SizedBox(height: 4),
-                  Text(
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: const Color(0xFFDBEAFE),
+                  child: Icon(icon, size: 16, color: const Color(0xFF1E3A8A)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
                     value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: Colors.black54,
               ),
             ),
           ],
@@ -244,47 +450,256 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     );
   }
 
+  Widget _buildFilterCard() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tune_outlined, size: 18, color: Color(0xFF1E3A8A)),
+              SizedBox(width: 6),
+              Text(
+                'Search and Filter',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                flex: 7,
+                child: TextField(
+                  controller: loanSearchController,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (_) {
+                    setState(() {});
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Search loan requests',
+                    hintText: 'Asset, member, phone, purpose',
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.search),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    suffixIcon: loanSearchController.text.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              loanSearchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.clear),
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 5,
+                child: DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: selectedStatusFilter,
+                  decoration: InputDecoration(
+                    labelText: 'Status',
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  items: const [
+                    'All',
+                    'Pending',
+                    'Approved',
+                    'Rejected',
+                    'Returned',
+                  ].map(
+                    (status) => DropdownMenuItem(
+                      value: status,
+                      child: Text(status),
+                    ),
+                  ).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedStatusFilter = value ?? 'All';
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<LoanRequestModel> _getFilteredLoans() {
+    final search = loanSearchController.text.trim().toLowerCase();
+
+    return loanRequests.where((loan) {
+      final matchesStatus =
+          selectedStatusFilter == 'All' || loan.status == selectedStatusFilter;
+      final matchesSearch =
+          search.isEmpty ||
+          loan.assetName.toLowerCase().contains(search) ||
+          loan.assetCategory.toLowerCase().contains(search) ||
+          loan.userName.toLowerCase().contains(search) ||
+          loan.userEmail.toLowerCase().contains(search) ||
+          loan.userPhone.toLowerCase().contains(search) ||
+          loan.purpose.toLowerCase().contains(search);
+
+      return matchesStatus && matchesSearch;
+    }).toList();
+  }
+
+
   Widget _buildStatusChip(String status) {
-    Color backgroundColor;
-    switch (status) {
-      case 'Approved':
-        backgroundColor = Colors.green.shade100;
-        break;
-      case 'Rejected':
-        backgroundColor = Colors.red.shade100;
-        break;
-      case 'Returned':
-        backgroundColor = Colors.blue.shade100;
-        break;
-      default:
-        backgroundColor = Colors.orange.shade100;
-    }
+    final baseColor = _statusColor(status);
 
     return Chip(
       label: Text(status),
-      backgroundColor: backgroundColor,
+      backgroundColor: baseColor.withValues(alpha: 0.12),
       visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      labelStyle: TextStyle(fontSize: 12, color: baseColor),
+      padding: EdgeInsets.zero,
+    );
+  }
+
+  Widget _buildLoanTag(String label, Color backgroundColor, Color textColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Approved':
+        return const Color(0xFF15803D);
+      case 'Rejected':
+        return const Color(0xFFB91C1C);
+      case 'Returned':
+        return const Color(0xFF1D4ED8);
+      default:
+        return const Color(0xFFB45309);
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'Approved':
+        return Icons.task_alt_outlined;
+      case 'Rejected':
+        return Icons.cancel_outlined;
+      case 'Returned':
+        return Icons.assignment_returned_outlined;
+      default:
+        return Icons.hourglass_top_outlined;
+    }
+  }
+
+  String? _assetImageUrl(int assetId) {
+    try {
+      final asset = allAssets.firstWhere((item) => item.id == assetId);
+      if (asset.image.isEmpty) return null;
+      return '${ApiPath.baseUrl.replaceFirst('/api', '')}/uploads/assets/${asset.image}';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildCompactDetailRow({
+    required IconData icon,
+    required String label,
+    int maxLines = 1,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade700),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.2,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildLoanDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
             ),
-            TextSpan(text: value),
-          ],
-        ),
-        style: const TextStyle(
-          fontSize: 13,
-          height: 1.35,
-          color: Colors.black87,
-        ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -303,11 +718,23 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       return [
         ElevatedButton(
           onPressed: () => showAdminActionDialog(loan, 'approve'),
-          child: const Text('Approve'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: const Text('Approve', style: TextStyle(fontSize: 12)),
         ),
         OutlinedButton(
           onPressed: () => showAdminActionDialog(loan, 'reject'),
-          child: const Text('Reject'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: const Text('Reject', style: TextStyle(fontSize: 12)),
         ),
       ];
     }
@@ -316,7 +743,13 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       return [
         ElevatedButton(
           onPressed: () => showAdminActionDialog(loan, 'return'),
-          child: const Text('Mark Returned'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: const Text('Mark Returned', style: TextStyle(fontSize: 12)),
         ),
       ];
     }
@@ -327,6 +760,182 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         style: Theme.of(context).textTheme.bodySmall,
       ),
     ];
+  }
+
+  void showLoanDetailsDialog(LoanRequestModel loan) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final statusColor = _statusColor(loan.status);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+          contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          title: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Loan Request Details'),
+                    const SizedBox(height: 4),
+                    Text(
+                      loan.assetName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildStatusChip(loan.status),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(dialogContext).size.width > 640
+                ? 520
+                : double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDialogSectionTitle('Loan Summary'),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildLoanDetailRow(
+                                'Category',
+                                loan.assetCategory,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildLoanDetailRow(
+                                'Quantity',
+                                loan.quantity.toString(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildLoanDetailRow(
+                                'Loan Date',
+                                loan.loanDate,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildLoanDetailRow(
+                                'Due Date',
+                                loan.dueDate,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDialogSectionTitle('Borrower'),
+                  const SizedBox(height: 8),
+                  _buildLoanDetailRow(
+                    'Member',
+                    '${loan.userName} (${loan.userEmail})',
+                  ),
+                  _buildLoanDetailRow(
+                    'Phone Number',
+                    loan.userPhone.isEmpty ? '-' : loan.userPhone,
+                  ),
+                  if (loan.userPhone.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _launchPhoneCall(loan.userPhone),
+                          icon: const Icon(Icons.call_outlined, size: 18),
+                          label: const Text('Call'),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => _launchWhatsApp(loan.userPhone),
+                          icon: const Icon(Icons.chat_outlined, size: 18),
+                          label: const Text('WhatsApp'),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  _buildDialogSectionTitle('Purpose and Notes'),
+                  const SizedBox(height: 8),
+                  _buildLoanDetailRow('Purpose', loan.purpose),
+                  _buildLoanDetailRow(
+                    'Admin Notes',
+                    loan.adminNotes.isEmpty ? '-' : loan.adminNotes,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildDialogSectionTitle('Audit Trail'),
+                  const SizedBox(height: 8),
+                  _buildLoanDetailRow('Requested At', loan.createdAt),
+                  if (loan.approvedByName.isNotEmpty)
+                    _buildLoanDetailRow('Approved By', loan.approvedByName),
+                  if (loan.approvedAt.isNotEmpty)
+                    _buildLoanDetailRow('Approved At', loan.approvedAt),
+                  if (loan.returnedAt.isNotEmpty)
+                    _buildLoanDetailRow('Returned At', loan.returnedAt),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF0F172A),
+      ),
+    );
   }
 
   Future<void> loadLoanData() async {
@@ -381,6 +990,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         loanRequests
           ..clear()
           ..addAll(loadedLoans);
+        allAssets
+          ..clear()
+          ..addAll(loadedAssets);
         availableAssets
           ..clear()
           ..addAll(loadedAssets.where((asset) => asset.quantity > 0));
@@ -399,6 +1011,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     }
   }
 
+  void openLoanReportScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoanReportScreen(user: widget.user),
+      ),
+    );
+  }
+
   void showLoanRequestDialog() {
     quantityController.clear();
     purposeController.clear();
@@ -412,14 +1033,31 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
               title: const Text('New Loan Request'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Text(
+                        'Pick an asset, enter the quantity, and select the loan period for approval.',
+                        style: TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     DropdownButtonFormField<int>(
                       initialValue: selectedAssetId,
-                      decoration: const InputDecoration(labelText: 'Asset'),
+                      decoration: _buildDialogInputDecoration('Asset'),
                       items: availableAssets
                           .map(
                             (asset) => DropdownMenuItem(
@@ -439,22 +1077,20 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                     const SizedBox(height: 10),
                     TextField(
                       controller: quantityController,
-                      decoration: const InputDecoration(labelText: 'Quantity'),
+                      decoration: _buildDialogInputDecoration('Quantity'),
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: purposeController,
-                      decoration: const InputDecoration(labelText: 'Purpose'),
+                      decoration: _buildDialogInputDecoration('Purpose'),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 10),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Loan Date: ${_formatDate(selectedLoanDate)}',
-                      ),
-                      trailing: const Icon(Icons.calendar_month),
+                    _buildDatePickerTile(
+                      title: 'Loan Date',
+                      value: _formatDate(selectedLoanDate),
+                      icon: Icons.calendar_month_outlined,
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -469,10 +1105,11 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                         }
                       },
                     ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Due Date: ${_formatDate(selectedDueDate)}'),
-                      trailing: const Icon(Icons.event_available),
+                    const SizedBox(height: 10),
+                    _buildDatePickerTile(
+                      title: 'Due Date',
+                      value: _formatDate(selectedDueDate),
+                      icon: Icons.event_available_outlined,
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -495,15 +1132,77 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancel'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: submitLoanRequest,
-                  child: const Text('Submit'),
+                  icon: const Icon(Icons.send_outlined),
+                  label: const Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildDatePickerTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade400),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF1E3A8A)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(value),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildDialogInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
     );
   }
 
@@ -515,6 +1214,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         selectedDueDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please complete the loan request form')),
+      );
+      return;
+    }
+
+    if (widget.user.phone.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please register with a phone number before requesting a loan'),
+        ),
       );
       return;
     }
@@ -571,24 +1279,44 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
           title: Text('${_capitalize(action)} Loan Request'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Member: ${loan.userName}'),
-              Text('Asset: ${loan.assetName}'),
-              Text('Quantity: ${loan.quantity}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: adminNotesController,
-                decoration: const InputDecoration(
-                  labelText: 'Admin Notes',
-                  border: OutlineInputBorder(),
+          content: SizedBox(
+            width: MediaQuery.of(dialogContext).size.width > 640
+                ? 460
+                : double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Member: ${loan.userName}'),
+                      const SizedBox(height: 4),
+                      Text('Asset: ${loan.assetName}'),
+                      const SizedBox(height: 4),
+                      Text('Quantity: ${loan.quantity}'),
+                    ],
+                  ),
                 ),
-                maxLines: 3,
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: adminNotesController,
+                  decoration: _buildDialogInputDecoration('Admin Notes'),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -601,6 +1329,11 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                 if (!mounted || !dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
               },
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: Text(_capitalize(action)),
             ),
           ],
@@ -638,6 +1371,49 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Update error: $e')));
     }
+  }
+
+  Future<void> _launchPhoneCall(String phoneNumber) async {
+    final normalizedPhone = _normalizePhoneForCall(phoneNumber);
+    final callUri = Uri(scheme: 'tel', path: normalizedPhone);
+    await _launchExternalUri(callUri, 'Unable to start phone call');
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = _normalizePhoneForWhatsApp(phoneNumber);
+    final whatsappUri = Uri.parse('https://wa.me/$normalizedPhone');
+    await _launchExternalUri(whatsappUri, 'Unable to open WhatsApp');
+  }
+
+  Future<void> _launchExternalUri(Uri uri, String errorMessage) async {
+    try {
+      final didLaunch = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!didLaunch && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+    }
+  }
+
+  String _normalizePhoneForCall(String phoneNumber) {
+    return phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+  }
+
+  String _normalizePhoneForWhatsApp(String phoneNumber) {
+    var digits = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.startsWith('0')) {
+      digits = '6$digits';
+    }
+    return digits;
   }
 
   String _formatDate(DateTime? date) {

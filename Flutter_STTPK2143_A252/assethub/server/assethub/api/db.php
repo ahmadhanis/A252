@@ -13,11 +13,24 @@ try {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
+            phone TEXT NOT NULL DEFAULT '',
             password TEXT NOT NULL,
             role TEXT NOT NULL,
             created_at DATETIME DEFAULT (datetime('now', 'localtime'))
         )
     ");
+
+    $userColumns = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+    $hasPhoneColumn = false;
+    foreach ($userColumns as $column) {
+        if (($column["name"] ?? "") === "phone") {
+            $hasPhoneColumn = true;
+            break;
+        }
+    }
+    if (!$hasPhoneColumn) {
+        $db->exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+    }
 
     $db->exec("
         CREATE TABLE IF NOT EXISTS assets (
@@ -50,6 +63,22 @@ try {
             FOREIGN KEY (user_id) REFERENCES users(id),
             FOREIGN KEY (asset_id) REFERENCES assets(id),
             FOREIGN KEY (approved_by) REFERENCES users(id)
+        )
+    ");
+
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS service_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            service_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            details TEXT NOT NULL,
+            preferred_date TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Pending',
+            admin_notes TEXT DEFAULT '',
+            created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (user_id) REFERENCES users(id)
         )
     ");
 
