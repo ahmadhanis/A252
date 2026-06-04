@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ESP32 Firebase DHT11 Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f9;
+      color: #222;
+    }
+
+    header {
+      background: #1e3a8a;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1200px;
+      margin: 20px auto;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #1e3a8a;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+
+    .small {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .controls {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    select, button {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      background: #1e3a8a;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:hover {
+      background: #162c69;
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .device-card {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      border-left: 6px solid #1e3a8a;
+    }
+
+    .device-card h3 {
+      margin: 0 0 10px;
+      color: #1e3a8a;
+    }
+
+    .reading-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 15px;
+    }
+
+    .reading-row strong {
+      color: #333;
+    }
+
+    .table-box {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    th {
+      background: #1e3a8a;
+      color: white;
+      padding: 12px;
+      text-align: left;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:hover {
+      background: #f1f5ff;
+    }
+
+    .status {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .footer {
+      text-align: center;
+      color: #777;
+      font-size: 13px;
+      margin: 30px 0;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 20px;
+      }
+
+      .value {
+        font-size: 22px;
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      select, button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>ESP32 DHT11 Firebase Dashboard</h1>
+    <p>Realtime monitoring for multiple ESP32 devices</p>
+  </header>
+
+  <div class="container">
+
+    <div id="statusBox" class="status">
+      Connecting to Firebase...
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <h3>Total Devices</h3>
+        <div class="value" id="totalDevices">0</div>
+        <div class="small">Registered ESP32 devices</div>
+      </div>
+
+      <div class="card">
+        <h3>Selected Device</h3>
+        <div class="value" id="selectedDeviceText">-</div>
+        <div class="small">Device currently viewed</div>
+      </div>
+
+      <div class="card">
+        <h3>Latest Temperature</h3>
+        <div class="value" id="latestTemp">- °C</div>
+        <div class="small">From selected device</div>
+      </div>
+
+      <div class="card">
+        <h3>Latest Humidity</h3>
+        <div class="value" id="latestHumidity">- %</div>
+        <div class="small">From selected device</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label for="deviceSelect"><strong>Select Device:</strong></label>
+
+      <select id="deviceSelect">
+        <option value="">Loading devices...</option>
+      </select>
+
+      <button onclick="loadSelectedDeviceHistory()">Load History</button>
+      <button onclick="clearHistoryTable()">Clear Table</button>
+    </div>
+
+    <h2>Latest Data for All Devices</h2>
+    <div id="deviceGrid" class="device-grid">
+      <!-- Device cards will appear here -->
+    </div>
+
+    <h2>Historical Data</h2>
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Device ID</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Temperature (°C)</th>
+            <th>Humidity (%)</th>
+            <th>Firebase Key</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable">
+          <tr>
+            <td colspan="7">Please select a device and load history.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      ESP32 + DHT11 + Firebase Realtime Database
+    </div>
+
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    // ====================================================
+    // Firebase Configuration
+    // ====================================================
+    const firebaseConfig = {
+      databaseURL: "https://iotmessagebox.firebaseio.com/"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const database = firebase.database();
+
+    const devicesRef = database.ref("devices");
+
+    let devicesData = {};
+    let selectedDevice = "";
+
+    // ====================================================
+    // Realtime Listener for All Devices
+    // ====================================================
+    devicesRef.on("value", function(snapshot) {
+      devicesData = snapshot.val() || {};
+
+      updateStatus("Connected to Firebase. Data loaded successfully.", false);
+      updateDeviceDropdown();
+      displayAllLatestDevices();
+
+      const deviceIds = Object.keys(devicesData);
+      document.getElementById("totalDevices").innerText = deviceIds.length;
+
+      if (!selectedDevice && deviceIds.length > 0) {
+        selectedDevice = deviceIds[0];
+        document.getElementById("deviceSelect").value = selectedDevice;
+        updateSelectedDeviceSummary();
+        loadSelectedDeviceHistory();
+      } else if (selectedDevice) {
+        updateSelectedDeviceSummary();
+      }
+
+    }, function(error) {
+      updateStatus("Firebase error: " + error.message, true);
+    });
+
+    // ====================================================
+    // Update Status
+    // ====================================================
+    function updateStatus(message, isError) {
+      const statusBox = document.getElementById("statusBox");
+      statusBox.innerText = message;
+
+      if (isError) {
+        statusBox.classList.add("error");
+      } else {
+        statusBox.classList.remove("error");
+      }
+    }
+
+    // ====================================================
+    // Update Device Dropdown
+    // ====================================================
+    function updateDeviceDropdown() {
+      const deviceSelect = document.getElementById("deviceSelect");
+      const deviceIds = Object.keys(devicesData);
+
+      deviceSelect.innerHTML = "";
+
+      if (deviceIds.length === 0) {
+        deviceSelect.innerHTML = "<option value=''>No device found</option>";
+        return;
+      }
+
+      deviceIds.forEach(function(deviceId) {
+        const option = document.createElement("option");
+        option.value = deviceId;
+        option.textContent = deviceId;
+        deviceSelect.appendChild(option);
+      });
+
+      if (selectedDevice && devicesData[selectedDevice]) {
+        deviceSelect.value = selectedDevice;
+      }
+    }
+
+    // ====================================================
+    // Display Latest Data for All Devices
+    // ====================================================
+    function displayAllLatestDevices() {
+      const deviceGrid = document.getElementById("deviceGrid");
+      const deviceIds = Object.keys(devicesData);
+
+      deviceGrid.innerHTML = "";
+
+      if (deviceIds.length === 0) {
+        deviceGrid.innerHTML = "<div class='card'>No device data available.</div>";
+        return;
+      }
+
+      deviceIds.forEach(function(deviceId) {
+        const device = devicesData[deviceId];
+        const latest = device.latest || {};
+
+        const temperature = latest.temperature ?? "-";
+        const humidity = latest.humidity ?? "-";
+        const datetime = latest.datetime ?? "-";
+
+        const card = document.createElement("div");
+        card.className = "device-card";
+
+        card.innerHTML = `
+          <h3>${deviceId}</h3>
+
+          <div class="reading-row">
+            <span>Temperature</span>
+            <strong>${temperature} °C</strong>
+          </div>
+
+          <div class="reading-row">
+            <span>Humidity</span>
+            <strong>${humidity} %</strong>
+          </div>
+
+          <div class="reading-row">
+            <span>Date Time</span>
+            <strong>${datetime}</strong>
+          </div>
+
+          <button onclick="selectDevice('${deviceId}')">View History</button>
+        `;
+
+        deviceGrid.appendChild(card);
+      });
+    }
+
+    // ====================================================
+    // Select Device from Card
+    // ====================================================
+    function selectDevice(deviceId) {
+      selectedDevice = deviceId;
+      document.getElementById("deviceSelect").value = selectedDevice;
+      updateSelectedDeviceSummary();
+      loadSelectedDeviceHistory();
+    }
+
+    // ====================================================
+    // Dropdown Change Event
+    // ====================================================
+    document.getElementById("deviceSelect").addEventListener("change", function() {
+      selectedDevice = this.value;
+      updateSelectedDeviceSummary();
+    });
+
+    // ====================================================
+    // Update Selected Device Summary Cards
+    // ====================================================
+    function updateSelectedDeviceSummary() {
+      if (!selectedDevice || !devicesData[selectedDevice]) {
+        document.getElementById("selectedDeviceText").innerText = "-";
+        document.getElementById("latestTemp").innerText = "- °C";
+        document.getElementById("latestHumidity").innerText = "- %";
+        return;
+      }
+
+      const latest = devicesData[selectedDevice].latest || {};
+
+      document.getElementById("selectedDeviceText").innerText = selectedDevice;
+      document.getElementById("latestTemp").innerText = (latest.temperature ?? "-") + " °C";
+      document.getElementById("latestHumidity").innerText = (latest.humidity ?? "-") + " %";
+    }
+
+    // ====================================================
+    // Load Historical Data for Selected Device
+    // ====================================================
+    function loadSelectedDeviceHistory() {
+      const deviceSelect = document.getElementById("deviceSelect");
+      selectedDevice = deviceSelect.value;
+
+      if (!selectedDevice) {
+        updateStatus("Please select a device first.", true);
+        return;
+      }
+
+      const historyRef = database.ref("devices/" + selectedDevice + "/history");
+
+      // Firebase can retrieve list data using listeners such as value events.
+      // Here we read the history list once and display it in table form.
+      historyRef.once("value", function(snapshot) {
+        const historyData = snapshot.val() || {};
+        displayHistoryTable(selectedDevice, historyData);
+        updateSelectedDeviceSummary();
+        updateStatus("Historical data loaded for " + selectedDevice + ".", false);
+      }, function(error) {
+        updateStatus("Error loading history: " + error.message, true);
+      });
+    }
+
+    // ====================================================
+    // Display Historical Data Table
+    // ====================================================
+    function displayHistoryTable(deviceId, historyData) {
+      const historyTable = document.getElementById("historyTable");
+      const keys = Object.keys(historyData);
+
+      historyTable.innerHTML = "";
+
+      if (keys.length === 0) {
+        historyTable.innerHTML = `
+          <tr>
+            <td colspan="7">No historical data found for ${deviceId}.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Sort descending so latest data appears first
+      keys.sort().reverse();
+
+      keys.forEach(function(key, index) {
+        const item = historyData[key];
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${item.deviceid ?? deviceId}</td>
+          <td>${item.date ?? "-"}</td>
+          <td>${item.time ?? "-"}</td>
+          <td>${item.temperature ?? "-"}</td>
+          <td>${item.humidity ?? "-"}</td>
+          <td>${key}</td>
+        `;
+
+        historyTable.appendChild(row);
+      });
+    }
+
+    // ====================================================
+    // Clear History Table
+    // ====================================================
+    function clearHistoryTable() {
+      document.getElementById("historyTable").innerHTML = `
+        <tr>
+          <td colspan="7">History table cleared.</td>
+        </tr>
+      `;
+    }
+  </script>
+
+</body>
+</html>
