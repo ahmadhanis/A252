@@ -32,6 +32,34 @@ try {
         $db->exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
     }
 
+    $userColumns = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+    $userColumnNames = array_map(fn($column) => $column["name"] ?? "", $userColumns);
+    if (!in_array("is_verified", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 1");
+    }
+    if (!in_array("verification_code", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN verification_code TEXT DEFAULT ''");
+    }
+    if (!in_array("verification_token", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN verification_token TEXT DEFAULT ''");
+    }
+    if (!in_array("verification_expires_at", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN verification_expires_at TEXT DEFAULT ''");
+    }
+    if (!in_array("verified_at", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN verified_at TEXT DEFAULT ''");
+    }
+    if (!in_array("password_reset_token", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN password_reset_token TEXT DEFAULT ''");
+    }
+    if (!in_array("password_reset_expires_at", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN password_reset_expires_at TEXT DEFAULT ''");
+    }
+    if (!in_array("profile_image", $userColumnNames, true)) {
+        $db->exec("ALTER TABLE users ADD COLUMN profile_image TEXT DEFAULT ''");
+    }
+    $db->exec("UPDATE users SET is_verified = 1 WHERE role = 'Admin'");
+
     $db->exec("
         CREATE TABLE IF NOT EXISTS assets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

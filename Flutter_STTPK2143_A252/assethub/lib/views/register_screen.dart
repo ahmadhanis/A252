@@ -76,16 +76,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => isLoading = false);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text("Check Your Email"),
           content: Text(
-            (data["message"] ?? "Registration successful").toString(),
+            (data["message"] ??
+                    "Account created. Please check your email for the OTP confirmation link.")
+                .toString(),
           ),
-          backgroundColor: Colors.green,
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pop(context);
+              },
+              child: const Text("Back to Login"),
+            ),
+          ],
         ),
       );
-
-      Navigator.pop(context);
     } catch (e) {
       setState(() => isLoading = false);
 
@@ -177,6 +187,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          "After registration, AssetHub will send an onboarding email with a 6-digit OTP and confirmation link. You must verify your email before logging in.",
+                          style: TextStyle(fontSize: 12.5),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
                       TextField(
                         controller: nameController,
                         decoration: _buildFieldDecoration(
@@ -316,6 +339,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

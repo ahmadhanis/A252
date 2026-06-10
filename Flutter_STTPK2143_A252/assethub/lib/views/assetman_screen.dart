@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:assethub/models/asset_model.dart';
 import 'package:assethub/models/user_model.dart';
@@ -46,7 +45,8 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     'Storage',
   ];
 
-  File? imageFile;
+  XFile? imageFile;
+  Uint8List? imageBytes;
   late double screenHeight;
   late double screenWidth;
   List<AssetModel> assets = [];
@@ -91,7 +91,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     screenHeight = MediaQuery.of(context).size.height;
     screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Assets Management"),
         actions: [
@@ -102,20 +102,45 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildTopSection(),
-          Expanded(child: _buildAssetsContent()),
-          if (!isLoading) _buildPaginationControls(),
-        ],
+      body: _buildResponsiveBody(
+        Column(
+          children: [
+            _buildTopSection(),
+            Expanded(child: _buildAssetsContent()),
+            if (!isLoading) _buildPaginationControls(),
+          ],
+        ),
       ),
-      drawer: MyDrawer(user: widget.user),
+      drawer: MyDrawer(
+        user: widget.user,
+        currentSection: DrawerSection.assets,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showNewAssetDialog();
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildResponsiveBody(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth >= 1500
+            ? 1280.0
+            : constraints.maxWidth >= 1100
+            ? 1120.0
+            : constraints.maxWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: maxWidth,
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -267,16 +292,17 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     IconData icon,
     Color iconBackground,
   ) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x120F172A),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -304,7 +330,10 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10.5, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 10.5,
+              color: theme.textTheme.bodySmall?.color,
+            ),
           ),
         ],
       ),
@@ -313,6 +342,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
 
   void showNewAssetDialog() {
     imageFile = null;
+    imageBytes = null;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -370,8 +400,48 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: imageFile != null
-                              ? Image.file(imageFile!, fit: BoxFit.fitWidth)
+                          child: imageBytes != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: kIsWeb && imageFile != null
+                                      ? Image.network(
+                                          imageFile!.path,
+                                          key: ValueKey(imageFile!.path),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Image.memory(
+                                            imageBytes!,
+                                            key: ValueKey(
+                                              imageBytes!.lengthInBytes,
+                                            ),
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                            gaplessPlayback: true,
+                                            errorBuilder: (_, _, _) => const Icon(
+                                              Icons.image,
+                                              size: 50,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        )
+                                      : Image.memory(
+                                          imageBytes!,
+                                          key: ValueKey(
+                                            imageBytes!.lengthInBytes,
+                                          ),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                          gaplessPlayback: true,
+                                          errorBuilder: (_, _, _) => const Icon(
+                                            Icons.image,
+                                            size: 50,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                )
                               : const Icon(
                                   Icons.image,
                                   size: 50,
@@ -531,16 +601,18 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
   }
 
   Widget _buildSearchSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x120F172A),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -569,7 +641,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                     labelText: 'Filter by category',
                     isDense: true,
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -600,9 +672,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                 child: TextField(
                   controller: searchController,
                   textInputAction: TextInputAction.search,
-                  onChanged: (_) {
-                    setState(() {});
-                  },
+                  onChanged: (_) => setState(() {}),
                   onSubmitted: (_) => applyFilters(),
                   decoration: InputDecoration(
                     labelText: 'Search assets',
@@ -614,7 +684,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                       minHeight: 40,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
                             onPressed: () {
@@ -678,16 +748,18 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
             : asset.quantity <= 5
             ? const Color(0xFFB45309)
             : const Color(0xFF166534);
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
 
         return Card(
-          color: Colors.white,
+          color: colorScheme.surface,
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: BorderSide(color: colorScheme.outlineVariant),
           ),
-          child: InkWell(
+        child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
               showAssetDetailsDialog(asset);
@@ -702,7 +774,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                     child: Container(
                       width: 82,
                       height: 82,
-                      color: const Color(0xFFF1F5F9),
+                      color: colorScheme.surfaceContainerHighest,
                       child: imageUrl != null
                           ? Image.network(
                               imageUrl,
@@ -840,8 +912,8 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,9 +938,9 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                   vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: Text('Page $currentPage / $totalPages'),
               ),
@@ -973,7 +1045,8 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     );
 
     if (croppedFile != null) {
-      imageFile = File(croppedFile.path);
+      imageFile = XFile(croppedFile.path);
+      imageBytes = await imageFile!.readAsBytes();
       setDialogState(() {});
     }
   }
@@ -986,8 +1059,10 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     );
 
     if (pickedFile != null) {
-      imageFile = File(pickedFile.path);
+      imageFile = pickedFile;
+      imageBytes = await pickedFile.readAsBytes();
       await cropImage(setDialogState);
+      setDialogState(() {});
     }
   }
 
@@ -1000,13 +1075,15 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
     );
 
     if (pickedFile != null) {
-      imageFile = File(pickedFile.path);
+      imageFile = pickedFile;
+      imageBytes = await pickedFile.readAsBytes();
       await cropImage(setDialogState);
+      setDialogState(() {});
     }
   }
 
   void confirmInsertDialog() {
-    if (imageFile == null) {
+    if (imageBytes == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please select an image')));
@@ -1050,7 +1127,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                       'quantity': quantityController.text,
                       'price': priceController.text,
                       'description': descriptionController.text,
-                      'image': base64Encode(imageFile!.readAsBytesSync()),
+                      'image': base64Encode(imageBytes!),
                     },
                   );
                   if (!mounted) return;
@@ -1128,6 +1205,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
 
   void showEditDialog(AssetModel asset) {
     imageFile = null;
+    imageBytes = null;
     assetNameController.text = asset.name;
     quantityController.text = asset.quantity.toString();
     priceController.text = asset.price.toString();
@@ -1195,8 +1273,48 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: imageFile != null
-                              ? Image.file(imageFile!, fit: BoxFit.fitWidth)
+                          child: imageBytes != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: kIsWeb && imageFile != null
+                                      ? Image.network(
+                                          imageFile!.path,
+                                          key: ValueKey(imageFile!.path),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Image.memory(
+                                            imageBytes!,
+                                            key: ValueKey(
+                                              imageBytes!.lengthInBytes,
+                                            ),
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            fit: BoxFit.cover,
+                                            gaplessPlayback: true,
+                                            errorBuilder: (_, _, _) => const Icon(
+                                              Icons.image,
+                                              size: 50,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        )
+                                      : Image.memory(
+                                          imageBytes!,
+                                          key: ValueKey(
+                                            imageBytes!.lengthInBytes,
+                                          ),
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          fit: BoxFit.cover,
+                                          gaplessPlayback: true,
+                                          errorBuilder: (_, _, _) => const Icon(
+                                            Icons.image,
+                                            size: 50,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                )
                               : imageUrl != null
                               ? Image.network(
                                   imageUrl,
@@ -1303,9 +1421,9 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
       return;
     }
 
-    final imgf = imageFile == null
+    final imgf = imageBytes == null
         ? 'NA'
-        : base64Encode(imageFile!.readAsBytesSync());
+        : base64Encode(imageBytes!);
 
     showDialog(
       context: context,
@@ -1372,6 +1490,7 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
 
   void resetAssetForm() {
     imageFile = null;
+    imageBytes = null;
     assetNameController.clear();
     quantityController.clear();
     priceController.clear();

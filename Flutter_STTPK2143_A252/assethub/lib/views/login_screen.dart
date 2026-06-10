@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/services/api_path.dart';
+import 'package:assethub/views/forgot_password_screen.dart';
 import 'package:assethub/views/main_screen.dart';
 import 'package:assethub/views/register_screen.dart';
+import 'package:assethub/views/resend_otp_screen.dart';
+import 'package:assethub/views/user_main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,8 +19,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   bool rememberMe = false;
   bool isLoading = false;
@@ -102,7 +105,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainScreen(user: user)),
+        MaterialPageRoute(
+          builder: (context) => user.role.toLowerCase() == 'admin'
+              ? MainScreen(user: user)
+              : UserMainScreen(user: user),
+        ),
       );
     } catch (e) {
       setState(() => isLoading = false);
@@ -124,6 +131,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   // Build the login page layout.
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -134,9 +148,11 @@ class _LoginScreenState extends State<LoginScreen> {
         mediaQuery.padding.bottom -
         mediaQuery.viewInsets.bottom;
     final formWidth = getResponsiveWidth(width);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SizedBox(
         height: availableHeight > 0 ? availableHeight : null,
         child: Center(
@@ -145,10 +161,15 @@ class _LoginScreenState extends State<LoginScreen> {
               width: formWidth,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: width > 600
-                    ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.10),
+                          blurRadius: 10,
+                        ),
+                      ]
                     : [],
               ),
               child: Column(
@@ -157,27 +178,47 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Center(child: Image.asset('assets/logo.png', width: 100)),
                   const SizedBox(height: 25),
-                  const Text(
+                  Text(
                     "Welcome Back",
-                    style: TextStyle(
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ) ??
+                        const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E3A8A),
                     ),
                   ),
                   const SizedBox(height: 5),
-                  const Text(
+                  Text(
                     "Login to continue",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: theme.textTheme.bodyMedium?.color),
                   ),
                   const SizedBox(height: 25),
                   TextField(
                     controller: emailController,
                     decoration: InputDecoration(
                       labelText: "Email",
-                      prefixIcon: const Icon(Icons.email),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest,
+                      prefixIcon: Icon(
+                        Icons.email,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: colorScheme.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -187,9 +228,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: "Password",
-                      prefixIcon: const Icon(Icons.lock),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest,
+                      prefixIcon: Icon(
+                        Icons.lock,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: colorScheme.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -202,10 +259,50 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => rememberMe = value!);
                         },
                       ),
-                      const Flexible(child: Text("Remember Me")),
+                      Flexible(
+                        child: Text(
+                          "Remember Me",
+                          style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerLeft,
+                          ),
+                          child: const Text("Forgot Password?"),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ResendOtpScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text("Resend OTP"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -232,7 +329,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account? "),
+                      Text(
+                        "Don't have an account? ",
+                        style: TextStyle(
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
+                      ),
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -242,10 +344,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           "Register",
                           style: TextStyle(
-                            color: Color(0xFFFACC15),
+                            color: colorScheme.secondary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

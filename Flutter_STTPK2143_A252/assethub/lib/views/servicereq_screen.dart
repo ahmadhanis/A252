@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:assethub/models/service_request_model.dart';
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/services/api_path.dart';
+import 'package:assethub/views/service_report_screen.dart';
 import 'package:assethub/widgets/mydrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -71,10 +72,15 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
     final filteredRequests = _getFilteredRequests();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Service Requests'),
         actions: [
+          IconButton(
+            onPressed: openServiceReportScreen,
+            tooltip: 'Service Report',
+            icon: const Icon(Icons.summarize_outlined),
+          ),
           IconButton(
             onPressed: loadServiceRequests,
             tooltip: 'Refresh',
@@ -82,7 +88,10 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
           ),
         ],
       ),
-      drawer: MyDrawer(user: widget.user),
+      drawer: MyDrawer(
+        user: widget.user,
+        currentSection: DrawerSection.services,
+      ),
       floatingActionButton: isAdmin
           ? null
           : FloatingActionButton.extended(
@@ -90,149 +99,172 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
               icon: const Icon(Icons.add_task),
               label: const Text('Request Service'),
             ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildTopSection(filteredRequests.length),
-                Expanded(
-                  child: filteredRequests.isEmpty
-                      ? const Center(child: Text('No service requests found'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: filteredRequests.length,
-                          itemBuilder: (context, index) {
-                            final request = filteredRequests[index];
-                            final statusColor = _statusColor(request.status);
+      body: _buildResponsiveBody(
+        isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _buildTopSection(filteredRequests.length),
+                  Expanded(
+                    child: filteredRequests.isEmpty
+                        ? const Center(child: Text('No service requests found'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: filteredRequests.length,
+                            itemBuilder: (context, index) {
+                              final request = filteredRequests[index];
+                              final statusColor = _statusColor(request.status);
+                              final colorScheme = Theme.of(context).colorScheme;
 
-                            return Card(
-                              color: Colors.white,
-                              margin: const EdgeInsets.only(bottom: 10),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: Colors.grey.shade200),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: () => showServiceDetailsDialog(request),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Container(
-                                          width: 82,
-                                          height: 82,
-                                          color: statusColor.withValues(alpha: 0.12),
-                                          child: Icon(
-                                            _serviceIcon(request.serviceType),
-                                            size: 34,
-                                            color: statusColor,
+                              return Card(
+                                color: colorScheme.surface,
+                                margin: const EdgeInsets.only(bottom: 10),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(color: colorScheme.outlineVariant),
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => showServiceDetailsDialog(request),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Container(
+                                            width: 82,
+                                            height: 82,
+                                            color: statusColor.withValues(alpha: 0.12),
+                                            child: Icon(
+                                              _serviceIcon(request.serviceType),
+                                              size: 34,
+                                              color: statusColor,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    request.title,
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w700,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      request.title,
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                _buildStatusChip(request.status),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children: [
-                                                _buildTag(
-                                                  request.serviceType,
-                                                  const Color(0xFFDBEAFE),
-                                                  const Color(0xFF1D4ED8),
-                                                ),
-                                                _buildTag(
-                                                  request.preferredDate,
-                                                  statusColor.withValues(
-                                                    alpha: 0.12,
-                                                  ),
-                                                  statusColor,
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 10),
-                                            _buildCompactRow(
-                                              icon: Icons.person_outline,
-                                              label:
-                                                  '${request.userName} | ${request.userPhone.isEmpty ? '-' : request.userPhone}',
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              request.details,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Colors.black54,
-                                                height: 1.3,
+                                                  const SizedBox(width: 8),
+                                                  _buildStatusChip(request.status),
+                                                ],
                                               ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Row(
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    showServiceDetailsDialog(
-                                                      request,
-                                                    );
-                                                  },
-                                                  child: const Text(
-                                                    'View Details',
+                                              const SizedBox(height: 6),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                children: [
+                                                  _buildTag(
+                                                    request.serviceType,
+                                                    const Color(0xFFDBEAFE),
+                                                    const Color(0xFF1D4ED8),
                                                   ),
+                                                  _buildTag(
+                                                    request.preferredDate,
+                                                    statusColor.withValues(
+                                                      alpha: 0.12,
+                                                    ),
+                                                    statusColor,
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 10),
+                                              _buildCompactRow(
+                                                icon: Icons.person_outline,
+                                                label:
+                                                    '${request.userName} | ${request.userPhone.isEmpty ? '-' : request.userPhone}',
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                request.details,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                  height: 1.3,
                                                 ),
-                                                const Spacer(),
-                                                Wrap(
-                                                  spacing: 6,
-                                                  runSpacing: 6,
-                                                  children:
-                                                      _buildActionButtons(
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Row(
+                                                children: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      showServiceDetailsDialog(
                                                         request,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                                      );
+                                                    },
+                                                    child: const Text(
+                                                      'View Details',
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  Wrap(
+                                                    spacing: 6,
+                                                    runSpacing: 6,
+                                                    children:
+                                                        _buildActionButtons(
+                                                          request,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveBody(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth >= 1500
+            ? 1280.0
+            : constraints.maxWidth >= 1100
+            ? 1120.0
+            : constraints.maxWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: maxWidth,
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -352,16 +384,18 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
   }
 
   Widget _buildFilterCard() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x120F172A),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -396,7 +430,7 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                       minHeight: 40,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
                             onPressed: () {
@@ -426,7 +460,7 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                     labelText: 'Status',
                     isDense: true,
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -488,12 +522,14 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
   }
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
+      color: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
@@ -526,7 +562,10 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10.5, color: Colors.black54),
+              style: TextStyle(
+                fontSize: 10.5,
+                color: theme.textTheme.bodySmall?.color,
+              ),
             ),
           ],
         ),
@@ -1220,5 +1259,14 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
       default:
         return Icons.design_services_outlined;
     }
+  }
+
+  void openServiceReportScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ServiceReportScreen(user: widget.user),
+      ),
+    );
   }
 }

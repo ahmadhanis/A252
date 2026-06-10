@@ -49,13 +49,13 @@ class _MainScreenState extends State<MainScreen> {
         .length;
     final returnedLoans = _loans.where((loan) => loan.status == 'Returned').length;
     final categories = _buildTopCategories();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("AssetHub"),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             onPressed: _loadDashboardData,
@@ -64,16 +64,20 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      drawer: MyDrawer(user: widget.user),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadDashboardData,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _buildWelcomeCard(),
-                  const SizedBox(height: 16),
+      drawer: MyDrawer(
+        user: widget.user,
+        currentSection: DrawerSection.dashboard,
+      ),
+      body: _buildResponsiveBody(
+        _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadDashboardData,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildWelcomeCard(),
+                    const SizedBox(height: 16),
                   Text(
                     'App Summary',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -81,123 +85,170 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.25,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    children: [
-                      _buildSummaryCard(
-                        'Asset Records',
-                        _assets.length.toString(),
-                        Icons.inventory_2_outlined,
-                        const Color(0xFFDBEAFE),
-                      ),
-                      _buildSummaryCard(
-                        'Total Quantity',
-                        totalQuantity.toString(),
-                        Icons.straighten_outlined,
-                        const Color(0xFFDCFCE7),
-                      ),
-                      _buildSummaryCard(
-                        _isAdmin ? 'Pending Loans' : 'My Requests',
-                        pendingLoans.toString(),
-                        Icons.hourglass_top_outlined,
-                        const Color(0xFFFEF3C7),
-                      ),
-                      _buildSummaryCard(
-                        'Approved Loans',
-                        approvedLoans.toString(),
-                        Icons.task_alt_outlined,
-                        const Color(0xFFE0E7FF),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cards = [
+                        _buildSummaryCard(
+                          'Asset Records',
+                          _assets.length.toString(),
+                          Icons.inventory_2_outlined,
+                          const Color(0xFFDBEAFE),
+                        ),
+                        _buildSummaryCard(
+                          'Total Quantity',
+                          totalQuantity.toString(),
+                          Icons.straighten_outlined,
+                          const Color(0xFFDCFCE7),
+                        ),
+                        _buildSummaryCard(
+                          _isAdmin ? 'Pending Loans' : 'My Requests',
+                          pendingLoans.toString(),
+                          Icons.hourglass_top_outlined,
+                          const Color(0xFFFEF3C7),
+                        ),
+                        _buildSummaryCard(
+                          'Approved Loans',
+                          approvedLoans.toString(),
+                          Icons.task_alt_outlined,
+                          const Color(0xFFE0E7FF),
+                        ),
+                      ];
+
+                      if (constraints.maxWidth >= 900) {
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: cards.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 2.8,
+                              ),
+                          itemBuilder: (context, index) => cards[index],
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          for (int i = 0; i < cards.length; i++) ...[
+                            cards[i],
+                            if (i != cards.length - 1)
+                              const SizedBox(height: 12),
+                          ],
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
-                  _buildValueCard(totalValue, returnedLoans),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Top Categories',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    _buildValueCard(totalValue, returnedLoans),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Top Categories',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (categories.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No category data available'),
-                      ),
-                    )
-                  else
-                    ...categories.map(
-                      (category) => Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFFDBEAFE),
-                            child: Text(
-                              category.name.isEmpty
-                                  ? '?'
-                                  : category.name.substring(0, 1).toUpperCase(),
-                              style: const TextStyle(
-                                color: Color(0xFF1E3A8A),
-                                fontWeight: FontWeight.bold,
+                    const SizedBox(height: 10),
+                    if (categories.isEmpty)
+                      Card(
+                        color: colorScheme.surface,
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('No category data available'),
+                        ),
+                      )
+                    else
+                      ...categories.map(
+                        (category) => Card(
+                          color: colorScheme.surface,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFDBEAFE),
+                              child: Text(
+                                category.name.isEmpty
+                                    ? '?'
+                                    : category.name.substring(0, 1).toUpperCase(),
+                                style: const TextStyle(
+                                  color: Color(0xFF1E3A8A),
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          title: Text(category.name),
-                          subtitle: Text(
-                            '${category.assetCount} assets | Qty: ${category.totalQuantity}',
-                          ),
-                          trailing: Text(
-                            'RM ${category.totalValue.toStringAsFixed(2)}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            title: Text(category.name),
+                            subtitle: Text(
+                              '${category.assetCount} assets | Qty: ${category.totalQuantity}',
+                            ),
+                            trailing: Text(
+                              'RM ${category.totalValue.toStringAsFixed(2)}',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _isAdmin ? 'Recent Loan Requests' : 'My Recent Loans',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (_loans.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No loan requests available'),
+                    const SizedBox(height: 16),
+                    Text(
+                      _isAdmin ? 'Recent Loan Requests' : 'My Recent Loans',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  else
-                    ..._loans.take(5).map(
-                      (loan) => Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          leading: const Icon(Icons.assignment_outlined),
-                          title: Text(
-                            loan.assetName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    if (_loans.isEmpty)
+                      Card(
+                        color: colorScheme.surface,
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('No loan requests available'),
+                        ),
+                      )
+                    else
+                      ..._loans.take(5).map(
+                        (loan) => Card(
+                          color: colorScheme.surface,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            leading: const Icon(Icons.assignment_outlined),
+                            title: Text(
+                              loan.assetName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              '${loan.userName} | ${loan.loanDate} to ${loan.dueDate}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: _buildDashboardStatusChip(loan.status),
                           ),
-                          subtitle: Text(
-                            '${loan.userName} | ${loan.loanDate} to ${loan.dueDate}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: _buildDashboardStatusChip(loan.status),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveBody(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth >= 1500
+            ? 1280.0
+            : constraints.maxWidth >= 1100
+            ? 1120.0
+            : constraints.maxWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: maxWidth,
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -226,13 +277,13 @@ class _MainScreenState extends State<MainScreen> {
           const SizedBox(height: 6),
           Text(
             '${widget.user.role} account | ${widget.user.email}',
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.78)),
           ),
           if (widget.user.phone.trim().isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               'Phone: ${widget.user.phone}',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.78)),
             ),
           ],
         ],
@@ -246,35 +297,49 @@ class _MainScreenState extends State<MainScreen> {
     IconData icon,
     Color backgroundColor,
   ) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x110F172A),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           CircleAvatar(
             backgroundColor: backgroundColor,
             child: Icon(icon, color: const Color(0xFF1E3A8A)),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 13, color: Colors.black54),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.textTheme.bodySmall?.color,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -282,7 +347,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildValueCard(double totalValue, int returnedLoans) {
+    final theme = Theme.of(context);
     return Card(
+      color: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -297,11 +364,11 @@ class _MainScreenState extends State<MainScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Estimated Asset Value',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.black54,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -318,9 +385,12 @@ class _MainScreenState extends State<MainScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
+                Text(
                   'Returned',
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.textTheme.bodySmall?.color,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:typed_data';
 
-import 'package:assethub/models/loan_request_model.dart';
+import 'package:assethub/models/service_request_model.dart';
 import 'package:assethub/models/user_model.dart';
 import 'package:assethub/services/api_path.dart';
 import 'package:flutter/material.dart';
@@ -11,27 +10,27 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-class LoanReportScreen extends StatefulWidget {
+class ServiceReportScreen extends StatefulWidget {
   final UserModel user;
 
-  const LoanReportScreen({super.key, required this.user});
+  const ServiceReportScreen({super.key, required this.user});
 
   @override
-  State<LoanReportScreen> createState() => _LoanReportScreenState();
+  State<ServiceReportScreen> createState() => _ServiceReportScreenState();
 }
 
-class _LoanReportScreenState extends State<LoanReportScreen> {
-  final List<LoanRequestModel> _loans = [];
+class _ServiceReportScreenState extends State<ServiceReportScreen> {
+  final List<ServiceRequestModel> _requests = [];
   bool _isLoading = true;
   int? _selectedMonth;
   int? _selectedYear;
 
-  String get _loadLoanApiUrl => ApiPath.endpoint("load_loan_requests.php");
-
+  String get _loadServiceApiUrl => ApiPath.endpoint("load_service_requests.php");
   bool get _isAdmin => widget.user.role.toLowerCase() == 'admin';
-  List<LoanRequestModel> get _filteredLoans {
-    return _loans.where((loan) {
-      final parsedDate = _parseLoanDate(loan.loanDate);
+
+  List<ServiceRequestModel> get _filteredRequests {
+    return _requests.where((request) {
+      final parsedDate = _parseDate(request.preferredDate);
       if (parsedDate == null) {
         return _selectedMonth == null && _selectedYear == null;
       }
@@ -47,8 +46,8 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
 
   List<int> get _availableYears {
     final years = <int>{};
-    for (final loan in _loans) {
-      final parsedDate = _parseLoanDate(loan.loanDate);
+    for (final request in _requests) {
+      final parsedDate = _parseDate(request.preferredDate);
       if (parsedDate != null) {
         years.add(parsedDate.year);
       }
@@ -63,35 +62,34 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLoanReport();
+    _loadServiceReport();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredLoans = _filteredLoans;
-    final totalLoans = filteredLoans.length;
-    final totalQuantity = filteredLoans.fold<int>(
-      0,
-      (sum, loan) => sum + loan.quantity,
-    );
-    final pendingCount = filteredLoans
-        .where((loan) => loan.status == 'Pending')
+    final filteredRequests = _filteredRequests;
+    final totalRequests = filteredRequests.length;
+    final pendingCount = filteredRequests
+        .where((request) => request.status == 'Pending')
         .length;
-    final approvedCount = filteredLoans
-        .where((loan) => loan.status == 'Approved')
+    final inProgressCount = filteredRequests
+        .where((request) => request.status == 'In Progress')
         .length;
-    final returnedCount = filteredLoans
-        .where((loan) => loan.status == 'Returned')
+    final completedCount = filteredRequests
+        .where((request) => request.status == 'Completed')
         .length;
-    final statusSummary = _buildStatusSummary(filteredLoans);
-    final categorySummary = _buildCategorySummary(filteredLoans);
+    final rejectedCount = filteredRequests
+        .where((request) => request.status == 'Rejected')
+        .length;
+    final statusSummary = _buildStatusSummary(filteredRequests);
+    final typeSummary = _buildTypeSummary(filteredRequests);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loan Report'),
+        title: const Text('Service Request Report'),
         actions: [
           IconButton(
-            onPressed: _isLoading || filteredLoans.isEmpty ? null : _printReportPdf,
+            onPressed: _isLoading || filteredRequests.isEmpty ? null : _printReportPdf,
             tooltip: 'Print PDF',
             icon: const Icon(Icons.print_outlined),
           ),
@@ -99,8 +97,8 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _loans.isEmpty
-          ? const Center(child: Text('No loan requests available for report'))
+          : _requests.isEmpty
+          ? const Center(child: Text('No service requests available for report'))
           : ListView(
               padding: const EdgeInsets.all(12),
               children: [
@@ -112,13 +110,13 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
                   children: [
                     _buildResponsiveStatCard(
                       'Total Requests',
-                      totalLoans.toString(),
-                      Icons.assignment_outlined,
+                      totalRequests.toString(),
+                      Icons.design_services_outlined,
                     ),
                     _buildResponsiveStatCard(
-                      'Total Quantity',
-                      totalQuantity.toString(),
-                      Icons.format_list_numbered,
+                      'Pending',
+                      pendingCount.toString(),
+                      Icons.hourglass_top_outlined,
                     ),
                   ],
                 ),
@@ -128,19 +126,19 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
                   runSpacing: 12,
                   children: [
                     _buildResponsiveStatCard(
-                      'Pending',
-                      pendingCount.toString(),
-                      Icons.hourglass_top_outlined,
+                      'In Progress',
+                      inProgressCount.toString(),
+                      Icons.build_circle_outlined,
                     ),
                     _buildResponsiveStatCard(
-                      'Approved',
-                      approvedCount.toString(),
+                      'Completed',
+                      completedCount.toString(),
                       Icons.task_alt_outlined,
                     ),
                     _buildResponsiveStatCard(
-                      'Returned',
-                      returnedCount.toString(),
-                      Icons.assignment_returned_outlined,
+                      'Rejected',
+                      rejectedCount.toString(),
+                      Icons.cancel_outlined,
                     ),
                   ],
                 ),
@@ -157,62 +155,58 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
                         child: Icon(Icons.pie_chart_outline),
                       ),
                       title: Text(entry.key),
-                      subtitle: Text(
-                        '${entry.value.requestCount} requests | Qty: ${entry.value.totalQuantity}',
-                      ),
+                      subtitle: Text('${entry.value.requestCount} requests'),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Summary by Asset Category',
+                  'Summary by Service Type',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                ...categorySummary.entries.map(
+                ...typeSummary.entries.map(
                   (entry) => Card(
                     child: ListTile(
                       leading: const CircleAvatar(
                         child: Icon(Icons.category_outlined),
                       ),
                       title: Text(entry.key),
-                      subtitle: Text(
-                        '${entry.value.requestCount} requests | Qty: ${entry.value.totalQuantity}',
-                      ),
+                      subtitle: Text('${entry.value.requestCount} requests'),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _isAdmin ? 'Recent Loan Requests' : 'My Recent Requests',
+                  _isAdmin ? 'Recent Service Requests' : 'My Recent Requests',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                if (filteredLoans.isEmpty)
+                if (filteredRequests.isEmpty)
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text('No loan requests found for the selected month and year'),
+                      child: Text('No service requests found for the selected month and year'),
                     ),
                   )
                 else
-                  ...filteredLoans.take(8).map(
-                  (loan) => Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.assignment_turned_in_outlined),
-                      ),
-                      title: Text(loan.assetName),
-                      subtitle: Text(
-                        '${loan.userName} | ${loan.loanDate} to ${loan.dueDate}',
-                      ),
-                      trailing: Text(
-                        loan.status,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                  ...filteredRequests.take(8).map(
+                    (request) => Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.assignment_turned_in_outlined),
+                        ),
+                        title: Text(request.title),
+                        subtitle: Text(
+                          '${request.userName} | ${request.serviceType} | ${request.preferredDate}',
+                        ),
+                        trailing: Text(
+                          request.status,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
     );
@@ -332,46 +326,47 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
     );
   }
 
-  Map<String, _LoanStatusReport> _buildStatusSummary(List<LoanRequestModel> loans) {
-    final summary = <String, _LoanStatusReport>{};
+  Map<String, _ServiceReportCount> _buildStatusSummary(
+    List<ServiceRequestModel> requests,
+  ) {
+    final summary = <String, _ServiceReportCount>{};
 
-    for (final loan in loans) {
-      final current = summary.putIfAbsent(loan.status, () => _LoanStatusReport());
-      current.requestCount += 1;
-      current.totalQuantity += loan.quantity;
-    }
-
-    final sorted = summary.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-
-    return {for (final entry in sorted) entry.key: entry.value};
-  }
-
-  Map<String, _LoanStatusReport> _buildCategorySummary(List<LoanRequestModel> loans) {
-    final summary = <String, _LoanStatusReport>{};
-
-    for (final loan in loans) {
+    for (final request in requests) {
       final current = summary.putIfAbsent(
-        loan.assetCategory,
-        () => _LoanStatusReport(),
+        request.status,
+        () => _ServiceReportCount(),
       );
       current.requestCount += 1;
-      current.totalQuantity += loan.quantity;
     }
 
-    final sorted = summary.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-
+    final sorted = summary.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
     return {for (final entry in sorted) entry.key: entry.value};
   }
 
-  Future<void> _loadLoanReport() async {
+  Map<String, _ServiceReportCount> _buildTypeSummary(
+    List<ServiceRequestModel> requests,
+  ) {
+    final summary = <String, _ServiceReportCount>{};
+
+    for (final request in requests) {
+      final current = summary.putIfAbsent(
+        request.serviceType,
+        () => _ServiceReportCount(),
+      );
+      current.requestCount += 1;
+    }
+
+    final sorted = summary.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return {for (final entry in sorted) entry.key: entry.value};
+  }
+
+  Future<void> _loadServiceReport() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final uri = Uri.parse(_loadLoanApiUrl).replace(
+      final uri = Uri.parse(_loadServiceApiUrl).replace(
         queryParameters: {
           'role': widget.user.role,
           'user_id': widget.user.id.toString(),
@@ -379,30 +374,29 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
       );
       final response = await http.get(uri);
       if (response.statusCode != 200) {
-        throw Exception('Failed to load loan report');
+        throw Exception('Failed to load service report');
       }
 
       final data = jsonDecode(response.body);
-      log('Loan Report Response: $data');
       if (data['status'] != 'success') {
-        throw Exception(data['message'] ?? 'Failed to load loan report');
+        throw Exception(data['message'] ?? 'Failed to load service report');
       }
 
-      final loadedLoans = List<LoanRequestModel>.from(
-        (data['loans'] ?? []).map(
-          (loan) => LoanRequestModel.fromJson(Map<String, dynamic>.from(loan)),
+      final loadedRequests = List<ServiceRequestModel>.from(
+        (data['services'] ?? []).map(
+          (item) => ServiceRequestModel.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
         ),
       );
 
       if (!mounted) return;
       setState(() {
-        _loans
+        _requests
           ..clear()
-          ..addAll(loadedLoans);
+          ..addAll(loadedRequests);
         _selectedMonth ??= DateTime.now().month;
-        _selectedYear ??= _availableYears.contains(DateTime.now().year)
-            ? DateTime.now().year
-            : _availableYears.firstOrNull;
+        _selectedYear ??= _availableYears.isNotEmpty ? _availableYears.first : DateTime.now().year;
       });
     } catch (e) {
       if (!mounted) return;
@@ -432,23 +426,9 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
 
   Future<Uint8List> _buildReportPdf() async {
     final pdf = pw.Document();
-    final filteredLoans = _filteredLoans;
-    final totalLoans = filteredLoans.length;
-    final totalQuantity = filteredLoans.fold<int>(
-      0,
-      (sum, loan) => sum + loan.quantity,
-    );
-    final pendingCount = filteredLoans
-        .where((loan) => loan.status == 'Pending')
-        .length;
-    final approvedCount = filteredLoans
-        .where((loan) => loan.status == 'Approved')
-        .length;
-    final returnedCount = filteredLoans
-        .where((loan) => loan.status == 'Returned')
-        .length;
-    final statusSummary = _buildStatusSummary(filteredLoans);
-    final categorySummary = _buildCategorySummary(filteredLoans);
+    final filteredRequests = _filteredRequests;
+    final statusSummary = _buildStatusSummary(filteredRequests);
+    final typeSummary = _buildTypeSummary(filteredRequests);
     final generatedAt = DateTime.now();
 
     pdf.addPage(
@@ -457,7 +437,7 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
         margin: const pw.EdgeInsets.all(24),
         build: (context) => [
           pw.Text(
-            _isAdmin ? 'Loan Management Report' : 'My Loan Request Report',
+            _isAdmin ? 'Service Request Report' : 'My Service Request Report',
             style: pw.TextStyle(
               fontSize: 22,
               fontWeight: pw.FontWeight.bold,
@@ -477,11 +457,23 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              _buildPdfSummaryBox('Total Requests', totalLoans.toString()),
-              _buildPdfSummaryBox('Total Quantity', totalQuantity.toString()),
-              _buildPdfSummaryBox('Pending', pendingCount.toString()),
-              _buildPdfSummaryBox('Approved', approvedCount.toString()),
-              _buildPdfSummaryBox('Returned', returnedCount.toString()),
+              _buildPdfSummaryBox('Total Requests', filteredRequests.length.toString()),
+              _buildPdfSummaryBox(
+                'Pending',
+                filteredRequests.where((request) => request.status == 'Pending').length.toString(),
+              ),
+              _buildPdfSummaryBox(
+                'In Progress',
+                filteredRequests.where((request) => request.status == 'In Progress').length.toString(),
+              ),
+              _buildPdfSummaryBox(
+                'Completed',
+                filteredRequests.where((request) => request.status == 'Completed').length.toString(),
+              ),
+              _buildPdfSummaryBox(
+                'Rejected',
+                filteredRequests.where((request) => request.status == 'Rejected').length.toString(),
+              ),
             ],
           ),
           pw.SizedBox(height: 18),
@@ -493,56 +485,43 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
           pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: const ['Status', 'Requests', 'Quantity'],
+            headers: const ['Status', 'Requests'],
             data: statusSummary.entries
-                .map(
-                  (entry) => [
-                    entry.key,
-                    entry.value.requestCount.toString(),
-                    entry.value.totalQuantity.toString(),
-                  ],
-                )
+                .map((entry) => [entry.key, entry.value.requestCount.toString()])
                 .toList(),
           ),
           pw.SizedBox(height: 18),
           pw.Text(
-            'Summary by Asset Category',
+            'Summary by Service Type',
             style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: const ['Category', 'Requests', 'Quantity'],
-            data: categorySummary.entries
-                .map(
-                  (entry) => [
-                    entry.key,
-                    entry.value.requestCount.toString(),
-                    entry.value.totalQuantity.toString(),
-                  ],
-                )
+            headers: const ['Service Type', 'Requests'],
+            data: typeSummary.entries
+                .map((entry) => [entry.key, entry.value.requestCount.toString()])
                 .toList(),
           ),
           pw.SizedBox(height: 18),
           pw.Text(
-            'Loan Details',
+            'Service Request Details',
             style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 8),
           pw.TableHelper.fromTextArray(
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: const ['Asset', 'Borrower', 'Loan Date', 'Due Date', 'Qty', 'Status'],
-            data: filteredLoans
+            headers: const ['Title', 'Member', 'Service', 'Preferred Date', 'Status'],
+            data: filteredRequests
                 .map(
-                  (loan) => [
-                    loan.assetName,
-                    loan.userName,
-                    loan.loanDate,
-                    loan.dueDate,
-                    loan.quantity.toString(),
-                    loan.status,
+                  (request) => [
+                    request.title,
+                    request.userName,
+                    request.serviceType,
+                    request.preferredDate,
+                    request.status,
                   ],
                 )
                 .toList(),
@@ -581,12 +560,8 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
     );
   }
 
-  DateTime? _parseLoanDate(String value) {
-    try {
-      return DateTime.tryParse(value);
-    } catch (_) {
-      return null;
-    }
+  DateTime? _parseDate(String value) {
+    return DateTime.tryParse(value);
   }
 
   String _monthLabel(int month) {
@@ -617,7 +592,6 @@ class _LoanReportScreenState extends State<LoanReportScreen> {
   }
 }
 
-class _LoanStatusReport {
+class _ServiceReportCount {
   int requestCount = 0;
-  int totalQuantity = 0;
 }

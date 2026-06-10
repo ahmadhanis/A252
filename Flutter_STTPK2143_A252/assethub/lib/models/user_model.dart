@@ -4,6 +4,7 @@ class UserModel {
   final String email;
   final String phone;
   final String role;
+  final String profileImage;
   final String createdAt;
 
   const UserModel({
@@ -12,6 +13,7 @@ class UserModel {
     required this.email,
     required this.phone,
     required this.role,
+    required this.profileImage,
     required this.createdAt,
   });
 
@@ -22,6 +24,7 @@ class UserModel {
       email: (json["email"] ?? "").toString(),
       phone: (json["phone"] ?? "").toString(),
       role: (json["role"] ?? "").toString(),
+      profileImage: (json["profile_image"] ?? "").toString(),
       createdAt: (json["created_at"] ?? "").toString(),
     );
   }
@@ -33,6 +36,7 @@ class UserModel {
       "email": email,
       "phone": phone,
       "role": role,
+      "profile_image": profileImage,
       "created_at": createdAt,
     };
   }

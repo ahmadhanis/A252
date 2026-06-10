@@ -33,6 +33,7 @@ try {
             u.name AS user_name,
             u.email AS user_email,
             u.phone AS user_phone,
+            u.profile_image AS user_profile_image,
             a.name AS asset_name,
             a.category AS asset_category,
             approver.name AS approved_by_name

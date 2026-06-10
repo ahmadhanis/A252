@@ -12,6 +12,7 @@ class LoanRequestModel {
   final String userName;
   final String userEmail;
   final String userPhone;
+  final String userProfileImage;
   final String assetName;
   final String assetCategory;
   final String approvedByName;
@@ -32,6 +33,7 @@ class LoanRequestModel {
     required this.userName,
     required this.userEmail,
     required this.userPhone,
+    required this.userProfileImage,
     required this.assetName,
     required this.assetCategory,
     required this.approvedByName,
@@ -54,6 +56,7 @@ class LoanRequestModel {
       userName: (json["user_name"] ?? "").toString(),
       userEmail: (json["user_email"] ?? "").toString(),
       userPhone: (json["user_phone"] ?? "").toString(),
+      userProfileImage: (json["user_profile_image"] ?? "").toString(),
       assetName: (json["asset_name"] ?? "").toString(),
       assetCategory: (json["asset_category"] ?? "").toString(),
       approvedByName: (json["approved_by_name"] ?? "").toString(),

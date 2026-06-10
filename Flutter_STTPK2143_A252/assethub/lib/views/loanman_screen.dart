@@ -31,10 +31,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
 
   bool isLoading = true;
   bool isSubmitting = false;
-  int? selectedAssetId;
   DateTime? selectedLoanDate;
   DateTime? selectedDueDate;
   String selectedStatusFilter = 'All';
+  final List<_LoanBasketItem> loanBasket = [];
 
   bool get isAdmin => widget.user.role.toLowerCase() == 'admin';
   String get loadLoanApiUrl => ApiPath.endpoint("load_loan_requests.php");
@@ -62,7 +62,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     final filteredLoans = _getFilteredLoans();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Loan Management"),
         actions: [
@@ -78,7 +78,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
           ),
         ],
       ),
-      drawer: MyDrawer(user: widget.user),
+      drawer: MyDrawer(
+        user: widget.user,
+        currentSection: DrawerSection.loans,
+      ),
       floatingActionButton: isAdmin
           ? null
           : FloatingActionButton.extended(
@@ -86,168 +89,191 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
               icon: const Icon(Icons.add_task),
               label: const Text('Request Loan'),
             ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildTopSection(filteredLoans.length),
-                Expanded(
-                  child: filteredLoans.isEmpty
-                      ? const Center(child: Text('No loan requests found'))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: filteredLoans.length,
-                          itemBuilder: (context, index) {
-                            final loan = filteredLoans[index];
-                            final statusColor = _statusColor(loan.status);
-                            final imageUrl = _assetImageUrl(loan.assetId);
-                            return Card(
-                              color: Colors.white,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: Colors.grey.shade200),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: () {
-                                  showLoanDetailsDialog(loan);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Container(
-                                          width: 82,
-                                          height: 82,
-                                          color: const Color(0xFFF1F5F9),
-                                          child: imageUrl != null
-                                              ? Image.network(
-                                                  imageUrl,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, _, _) =>
-                                                      Icon(
-                                                        _statusIcon(
-                                                          loan.status,
+      body: _buildResponsiveBody(
+        isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _buildTopSection(filteredLoans.length),
+                  Expanded(
+                    child: filteredLoans.isEmpty
+                        ? const Center(child: Text('No loan requests found'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: filteredLoans.length,
+                            itemBuilder: (context, index) {
+                              final loan = filteredLoans[index];
+                              final statusColor = _statusColor(loan.status);
+                              final imageUrl = _assetImageUrl(loan.assetId);
+                              final colorScheme = Theme.of(context).colorScheme;
+                              return Card(
+                                color: colorScheme.surface,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(color: colorScheme.outlineVariant),
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () {
+                                    showLoanDetailsDialog(loan);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Container(
+                                            width: 82,
+                                            height: 82,
+                                            color: colorScheme.surfaceContainerHighest,
+                                            child: imageUrl != null
+                                                ? Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, _, _) =>
+                                                        Icon(
+                                                          _statusIcon(
+                                                            loan.status,
+                                                          ),
+                                                          size: 34,
+                                                          color: statusColor,
                                                         ),
-                                                        size: 34,
-                                                        color: statusColor,
-                                                      ),
-                                                )
-                                              : Icon(
-                                                  _statusIcon(loan.status),
-                                                  size: 34,
-                                                  color: statusColor,
-                                                ),
+                                                  )
+                                                : Icon(
+                                                    _statusIcon(loan.status),
+                                                    size: 34,
+                                                    color: statusColor,
+                                                  ),
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    loan.assetName,
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w700,
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      loan.assetName,
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                _buildStatusChip(loan.status),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children: [
-                                                _buildLoanTag(
-                                                  loan.assetCategory,
-                                                  const Color(0xFFDBEAFE),
-                                                  const Color(0xFF1D4ED8),
-                                                ),
-                                                _buildLoanTag(
-                                                  'Qty ${loan.quantity}',
-                                                  statusColor.withValues(
-                                                    alpha: 0.12,
-                                                  ),
-                                                  statusColor,
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 10),
-                                            _buildCompactDetailRow(
-                                              icon: Icons.person_outline,
-                                              label:
-                                                  '${loan.userName} | ${loan.userPhone.isEmpty ? '-' : loan.userPhone}',
-                                            ),
-                                            const SizedBox(height: 6),
-                                            _buildCompactDetailRow(
-                                              icon: Icons.date_range_outlined,
-                                              label:
-                                                  '${loan.loanDate} to ${loan.dueDate}',
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              loan.purpose,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Colors.black54,
-                                                height: 1.3,
+                                                  const SizedBox(width: 8),
+                                                  _buildStatusChip(loan.status),
+                                                ],
                                               ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Row(
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () {
-                                                    showLoanDetailsDialog(loan);
-                                                  },
-                                                  child: const Text(
-                                                    'View Details',
+                                              const SizedBox(height: 6),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 8,
+                                                children: [
+                                                  _buildLoanTag(
+                                                    loan.assetCategory,
+                                                    const Color(0xFFDBEAFE),
+                                                    const Color(0xFF1D4ED8),
                                                   ),
+                                                  _buildLoanTag(
+                                                    'Qty ${loan.quantity}',
+                                                    statusColor.withValues(
+                                                      alpha: 0.12,
+                                                    ),
+                                                    statusColor,
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 10),
+                                              _buildCompactDetailRow(
+                                                icon: Icons.person_outline,
+                                                label:
+                                                    '${loan.userName} | ${loan.userPhone.isEmpty ? '-' : loan.userPhone}',
+                                              ),
+                                              const SizedBox(height: 6),
+                                              _buildCompactDetailRow(
+                                                icon: Icons.date_range_outlined,
+                                                label:
+                                                    '${loan.loanDate} to ${loan.dueDate}',
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                loan.purpose,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                  height: 1.3,
                                                 ),
-                                                const Spacer(),
-                                                Wrap(
-                                                  alignment:
-                                                      WrapAlignment.end,
-                                                  spacing: 6,
-                                                  runSpacing: 6,
-                                                  children:
-                                                      _buildActionButtons(loan),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Row(
+                                                children: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      showLoanDetailsDialog(loan);
+                                                    },
+                                                    child: const Text(
+                                                      'View Details',
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  Wrap(
+                                                    alignment:
+                                                        WrapAlignment.end,
+                                                    spacing: 6,
+                                                    runSpacing: 6,
+                                                    children:
+                                                        _buildActionButtons(loan),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveBody(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth >= 1500
+            ? 1280.0
+            : constraints.maxWidth >= 1100
+            ? 1120.0
+            : constraints.maxWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: maxWidth,
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -401,12 +427,14 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
+      color: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(
@@ -439,9 +467,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
-                color: Colors.black54,
+                color: theme.textTheme.bodySmall?.color,
               ),
             ),
           ],
@@ -451,16 +479,18 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildFilterCard() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x120F172A),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
-            offset: Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -485,9 +515,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                 child: TextField(
                   controller: loanSearchController,
                   textInputAction: TextInputAction.search,
-                  onChanged: (_) {
-                    setState(() {});
-                  },
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     labelText: 'Search loan requests',
                     hintText: 'Asset, member, phone, purpose',
@@ -498,7 +526,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                       minHeight: 40,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     suffixIcon: loanSearchController.text.isNotEmpty
                         ? IconButton(
                             onPressed: () {
@@ -528,7 +556,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                     labelText: 'Status',
                     isDense: true,
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: colorScheme.surfaceContainerHighest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -855,6 +883,8 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   const SizedBox(height: 14),
                   _buildDialogSectionTitle('Borrower'),
                   const SizedBox(height: 8),
+                  _buildBorrowerProfileCard(loan),
+                  const SizedBox(height: 12),
                   _buildLoanDetailRow(
                     'Member',
                     '${loan.userName} (${loan.userEmail})',
@@ -924,6 +954,87 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildBorrowerProfileCard(LoanRequestModel loan) {
+    final profileImageName = loan.userProfileImage.trim();
+    final profileImageUrl = profileImageName.isEmpty
+        ? null
+        : '${ApiPath.baseUrl.replaceFirst('/api', '')}/uploads/profiles/$profileImageName?v=${profileImageName.hashCode}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: const Color(0xFFDBEAFE),
+            child: profileImageUrl == null
+                ? _buildBorrowerInitial(loan.userName)
+                : ClipOval(
+                    child: Image.network(
+                      profileImageUrl,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _buildBorrowerInitial(loan.userName),
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  loan.userName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  loan.userEmail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                ),
+                if (loan.userPhone.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    loan.userPhone,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBorrowerInitial(String name) {
+    return Text(
+      name.isNotEmpty ? name[0].toUpperCase() : 'U',
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF1E3A8A),
+      ),
     );
   }
 
@@ -1021,9 +1132,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   void showLoanRequestDialog() {
-    quantityController.clear();
     purposeController.clear();
-    selectedAssetId = availableAssets.isNotEmpty ? availableAssets.first.id : null;
+    quantityController.clear();
+    loanBasket.clear();
     selectedLoanDate = DateTime.now();
     selectedDueDate = DateTime.now().add(const Duration(days: 7));
 
@@ -1055,31 +1166,89 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<int>(
-                      initialValue: selectedAssetId,
-                      decoration: _buildDialogInputDecoration('Asset'),
-                      items: availableAssets
-                          .map(
-                            (asset) => DropdownMenuItem(
-                              value: asset.id,
-                              child: Text(
-                                '${asset.name} (Available: ${asset.quantity})',
-                              ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Basket (${loanBasket.length} items)',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          selectedAssetId = value;
-                        });
-                      },
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: availableAssets.isEmpty
+                              ? null
+                              : () => showAssetBasketPickerDialog(setDialogState),
+                          icon: const Icon(Icons.search_outlined),
+                          label: const Text('Search Items'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: quantityController,
-                      decoration: _buildDialogInputDecoration('Quantity'),
-                      keyboardType: TextInputType.number,
-                    ),
+                    const SizedBox(height: 8),
+                    if (loanBasket.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Text(
+                          'No items in basket yet. Search and add assets before submitting.',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      )
+                    else
+                      ...loanBasket.map(
+                        (item) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.asset.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${item.asset.category} | Qty: ${item.quantity}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setDialogState(() {
+                                    loanBasket.removeWhere(
+                                      (basketItem) =>
+                                          basketItem.asset.id == item.asset.id,
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 10),
                     TextField(
                       controller: purposeController,
@@ -1150,6 +1319,413 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     );
   }
 
+  void showAssetBasketPickerDialog(StateSetter parentSetState) {
+    final TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setPickerState) {
+            final filteredAssets = availableAssets.where((asset) {
+              final search = searchController.text.trim().toLowerCase();
+              if (search.isEmpty) return true;
+              return asset.name.toLowerCase().contains(search) ||
+                  asset.category.toLowerCase().contains(search) ||
+                  asset.description.toLowerCase().contains(search);
+            }).toList();
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              contentPadding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              title: const Text('Search Items'),
+              content: SizedBox(
+                width: MediaQuery.of(dialogContext).size.width > 640
+                    ? 520
+                    : double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Browse Available Assets',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Search by name, category, or description and add items into your loan basket.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: searchController,
+                      onChanged: (_) => setPickerState(() {}),
+                      decoration: _buildDialogInputDecoration('Search assets').copyWith(
+                        prefixIcon: const Icon(Icons.search),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          '${filteredAssets.length} item${filteredAssets.length == 1 ? '' : 's'} found',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Basket: ${loanBasket.length}',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1D4ED8),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 400,
+                      child: filteredAssets.isEmpty
+                          ? Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.search_off_outlined,
+                                    size: 40,
+                                    color: Colors.black38,
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'No matching assets found',
+                                    style: TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Try another keyword or browse all items.',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredAssets.length,
+                              itemBuilder: (context, index) {
+                                final asset = filteredAssets[index];
+                                final imageUrl = _assetImageUrl(asset.id);
+                                final alreadyInBasket = loanBasket.any(
+                                  (item) => item.asset.id == asset.id,
+                                );
+                                final stockColor = asset.quantity <= 2
+                                    ? const Color(0xFFB91C1C)
+                                    : asset.quantity <= 5
+                                    ? const Color(0xFFB45309)
+                                    : const Color(0xFF166534);
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  color: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          child: Container(
+                                            width: 64,
+                                            height: 64,
+                                            color: const Color(0xFFF1F5F9),
+                                            child: imageUrl != null
+                                                ? Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (_, _, _) => const Icon(
+                                                          Icons
+                                                              .inventory_2_outlined,
+                                                        ),
+                                                  )
+                                                : const Icon(
+                                                    Icons
+                                                        .inventory_2_outlined,
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                asset.name,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Wrap(
+                                                spacing: 6,
+                                                runSpacing: 6,
+                                                children: [
+                                                  _buildLoanTag(
+                                                    asset.category,
+                                                    const Color(0xFFDBEAFE),
+                                                    const Color(0xFF1D4ED8),
+                                                  ),
+                                                  _buildLoanTag(
+                                                    'Available ${asset.quantity}',
+                                                    stockColor.withValues(
+                                                      alpha: 0.12,
+                                                    ),
+                                                    stockColor,
+                                                  ),
+                                                ],
+                                              ),
+                                              if (asset.description
+                                                  .trim()
+                                                  .isNotEmpty) ...[
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  asset.description,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.black54,
+                                                    height: 1.3,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Column(
+                                          children: [
+                                            if (alreadyInBasket)
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                  bottom: 8,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFFDCFCE7,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(999),
+                                                ),
+                                                child: const Text(
+                                                  'In Basket',
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF166534),
+                                                  ),
+                                                ),
+                                              ),
+                                            if (alreadyInBasket) ...[
+                                              FilledButton(
+                                                onPressed: () =>
+                                                    _showAddToBasketDialog(
+                                                      asset,
+                                                      parentSetState,
+                                                      dialogContext,
+                                                    ),
+                                                style: FilledButton.styleFrom(
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                                child: const Text('Update'),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              OutlinedButton(
+                                                onPressed: () {
+                                                  parentSetState(() {
+                                                    loanBasket.removeWhere(
+                                                      (item) =>
+                                                          item.asset.id ==
+                                                          asset.id,
+                                                    );
+                                                  });
+                                                  setPickerState(() {});
+                                                },
+                                                style: OutlinedButton.styleFrom(
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                                child: const Text('Remove'),
+                                              ),
+                                            ] else
+                                              FilledButton(
+                                                onPressed:
+                                                    () => _showAddToBasketDialog(
+                                                      asset,
+                                                      parentSetState,
+                                                      dialogContext,
+                                                    ),
+                                                style: FilledButton.styleFrom(
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ),
+                                                child: const Text('Add'),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddToBasketDialog(
+    AssetModel asset,
+    StateSetter parentSetState,
+    BuildContext pickerContext,
+  ) {
+    final quantityTextController = TextEditingController(text: '1');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text('Add to Basket'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                asset.name,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Available: ${asset.quantity}',
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: quantityTextController,
+                decoration: _buildDialogInputDecoration('Quantity'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final quantity =
+                    int.tryParse(quantityTextController.text.trim()) ?? 0;
+                if (quantity <= 0 || quantity > asset.quantity) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Enter a quantity between 1 and ${asset.quantity}',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                parentSetState(() {
+                  final existingIndex = loanBasket.indexWhere(
+                    (item) => item.asset.id == asset.id,
+                  );
+                  if (existingIndex >= 0) {
+                    loanBasket[existingIndex] = _LoanBasketItem(
+                      asset: asset,
+                      quantity: quantity,
+                    );
+                  } else {
+                    loanBasket.add(
+                      _LoanBasketItem(asset: asset, quantity: quantity),
+                    );
+                  }
+                });
+                Navigator.pop(dialogContext);
+                Navigator.pop(pickerContext);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildDatePickerTile({
     required String title,
     required String value,
@@ -1207,8 +1783,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Future<void> submitLoanRequest() async {
-    if (selectedAssetId == null ||
-        quantityController.text.isEmpty ||
+    if (loanBasket.isEmpty ||
         purposeController.text.isEmpty ||
         selectedLoanDate == null ||
         selectedDueDate == null) {
@@ -1234,30 +1809,39 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse(requestLoanApiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': widget.user.id,
-          'asset_id': selectedAssetId,
-          'quantity': quantityController.text,
-          'purpose': purposeController.text.trim(),
-          'loan_date': _formatDate(selectedLoanDate),
-          'due_date': _formatDate(selectedDueDate),
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['status'] == 'success') {
-        if (!mounted) return;
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan request submitted')),
+      for (final item in loanBasket) {
+        final response = await http.post(
+          Uri.parse(requestLoanApiUrl),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': widget.user.id,
+            'asset_id': item.asset.id,
+            'quantity': item.quantity,
+            'purpose': purposeController.text.trim(),
+            'loan_date': _formatDate(selectedLoanDate),
+            'due_date': _formatDate(selectedDueDate),
+          }),
         );
-        await loadLoanData();
-      } else {
-        throw Exception(data['message'] ?? 'Failed to submit loan request');
+
+        final data = jsonDecode(response.body);
+        if (response.statusCode != 200 || data['status'] != 'success') {
+          throw Exception(
+            data['message'] ??
+                'Failed to submit loan request for ${item.asset.name}',
+          );
+        }
       }
+
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${loanBasket.length} loan request${loanBasket.length > 1 ? 's' : ''} submitted',
+          ),
+        ),
+      );
+      await loadLoanData();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -1428,4 +2012,14 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     if (value.isEmpty) return value;
     return value[0].toUpperCase() + value.substring(1);
   }
+}
+
+class _LoanBasketItem {
+  final AssetModel asset;
+  final int quantity;
+
+  const _LoanBasketItem({
+    required this.asset,
+    required this.quantity,
+  });
 }
