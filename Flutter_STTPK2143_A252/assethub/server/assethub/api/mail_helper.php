@@ -35,10 +35,10 @@ function assethub_send_verification_mail(
 
     try {
         $mail->isSMTP();
-        $mail->Host = "mail.slumberjer.com";
+        $mail->Host = "";
         $mail->SMTPAuth = true;
-        $mail->Username = "assethub@slumberjer.com";
-        $mail->Password = "SgcpnLLl6pw3";
+        $mail->Username = "";
+        $mail->Password = "";
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
         $mail->Timeout = 20;
