@@ -843,8 +843,8 @@ class _AssetmanScreenState extends State<AssetmanScreen> {
                               : asset.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.black54,
+                          style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color,
                             height: 1.3,
                           ),
                         ),

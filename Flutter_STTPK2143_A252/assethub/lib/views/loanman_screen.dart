@@ -21,6 +21,7 @@ class LoanmanScreen extends StatefulWidget {
 }
 
 class _LoanmanScreenState extends State<LoanmanScreen> {
+  static const int itemsPerPage = 10;
   final List<LoanRequestModel> loanRequests = [];
   final List<AssetModel> allAssets = [];
   final List<AssetModel> availableAssets = [];
@@ -31,6 +32,12 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
 
   bool isLoading = true;
   bool isSubmitting = false;
+  int currentPage = 1;
+  int totalItems = 0;
+  int totalPages = 1;
+  int summaryPendingCount = 0;
+  int summaryApprovedCount = 0;
+  int summaryReturnedCount = 0;
   DateTime? selectedLoanDate;
   DateTime? selectedDueDate;
   String selectedStatusFilter = 'All';
@@ -59,8 +66,6 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredLoans = _getFilteredLoans();
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -94,15 +99,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  _buildTopSection(filteredLoans.length),
+                  _buildTopSection(totalItems),
                   Expanded(
-                    child: filteredLoans.isEmpty
+                    child: loanRequests.isEmpty
                         ? const Center(child: Text('No loan requests found'))
                         : ListView.builder(
                             padding: const EdgeInsets.all(12),
-                            itemCount: filteredLoans.length,
+                            itemCount: loanRequests.length,
                             itemBuilder: (context, index) {
-                              final loan = filteredLoans[index];
+                              final loan = loanRequests[index];
                               final statusColor = _statusColor(loan.status);
                               final imageUrl = _assetImageUrl(loan.assetId);
                               final colorScheme = Theme.of(context).colorScheme;
@@ -213,8 +218,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                                                 loan.purpose,
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.black54,
+                                                style: TextStyle(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodyMedium?.color,
                                                   height: 1.3,
                                                 ),
                                               ),
@@ -251,6 +258,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                             },
                           ),
                   ),
+                  if (!isLoading) _buildPaginationControls(),
                 ],
               ),
       ),
@@ -377,16 +385,6 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildSummaryCards() {
-    final pendingCount = loanRequests
-        .where((loan) => loan.status == 'Pending')
-        .length;
-    final approvedCount = loanRequests
-        .where((loan) => loan.status == 'Approved')
-        .length;
-    final returnedCount = loanRequests
-        .where((loan) => loan.status == 'Returned')
-        .length;
-
     return Padding(
       padding: EdgeInsets.zero,
       child: SizedBox(
@@ -398,7 +396,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
               width: 176,
               child: _buildInfoCard(
                 'Pending Requests',
-                pendingCount.toString(),
+                summaryPendingCount.toString(),
                 Icons.hourglass_top_outlined,
               ),
             ),
@@ -407,7 +405,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
               width: 176,
               child: _buildInfoCard(
                 'Approved Loans',
-                approvedCount.toString(),
+                summaryApprovedCount.toString(),
                 Icons.task_alt_outlined,
               ),
             ),
@@ -416,7 +414,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
               width: 156,
               child: _buildInfoCard(
                 'Returned',
-                returnedCount.toString(),
+                summaryReturnedCount.toString(),
                 Icons.assignment_returned_outlined,
               ),
             ),
@@ -516,6 +514,12 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   controller: loanSearchController,
                   textInputAction: TextInputAction.search,
                   onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) {
+                    setState(() {
+                      currentPage = 1;
+                    });
+                    loadLoanData();
+                  },
                   decoration: InputDecoration(
                     labelText: 'Search loan requests',
                     hintText: 'Asset, member, phone, purpose',
@@ -531,7 +535,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                         ? IconButton(
                             onPressed: () {
                               loanSearchController.clear();
-                              setState(() {});
+                              setState(() {
+                                currentPage = 1;
+                              });
+                              loadLoanData();
                             },
                             icon: const Icon(Icons.clear),
                           )
@@ -580,7 +587,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   onChanged: (value) {
                     setState(() {
                       selectedStatusFilter = value ?? 'All';
+                      currentPage = 1;
                     });
+                    loadLoanData();
                   },
                 ),
               ),
@@ -590,26 +599,6 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       ),
     );
   }
-
-  List<LoanRequestModel> _getFilteredLoans() {
-    final search = loanSearchController.text.trim().toLowerCase();
-
-    return loanRequests.where((loan) {
-      final matchesStatus =
-          selectedStatusFilter == 'All' || loan.status == selectedStatusFilter;
-      final matchesSearch =
-          search.isEmpty ||
-          loan.assetName.toLowerCase().contains(search) ||
-          loan.assetCategory.toLowerCase().contains(search) ||
-          loan.userName.toLowerCase().contains(search) ||
-          loan.userEmail.toLowerCase().contains(search) ||
-          loan.userPhone.toLowerCase().contains(search) ||
-          loan.purpose.toLowerCase().contains(search);
-
-      return matchesStatus && matchesSearch;
-    }).toList();
-  }
-
 
   Widget _buildStatusChip(String status) {
     final baseColor = _statusColor(status);
@@ -683,20 +672,21 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     required String label,
     int maxLines = 1,
   }) {
+    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade700),
+        Icon(icon, size: 16, color: theme.textTheme.bodySmall?.color),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
             maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               height: 1.2,
-              color: Colors.black87,
+              color: theme.textTheme.bodyMedium?.color,
             ),
           ),
         ),
@@ -705,6 +695,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildLoanDetailRow(String label, String value) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -712,19 +703,19 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.black54,
+              color: theme.textTheme.bodySmall?.color,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               height: 1.35,
-              color: Colors.black87,
+              color: theme.textTheme.bodyMedium?.color,
             ),
           ),
         ],
@@ -795,6 +786,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       context: context,
       builder: (dialogContext) {
         final statusColor = _statusColor(loan.status);
+        final theme = Theme.of(dialogContext);
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -811,9 +803,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                     const SizedBox(height: 4),
                     Text(
                       loan.assetName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.black54,
+                        color: theme.textTheme.bodySmall?.color,
                       ),
                     ),
                   ],
@@ -958,6 +950,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildBorrowerProfileCard(LoanRequestModel loan) {
+    final theme = Theme.of(context);
     final profileImageName = loan.userProfileImage.trim();
     final profileImageUrl = profileImageName.isEmpty
         ? null
@@ -1007,15 +1000,18 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   loan.userEmail,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: theme.textTheme.bodySmall?.color,
+                  ),
                 ),
                 if (loan.userPhone.trim().isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     loan.userPhone,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
-                      color: Colors.black54,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
@@ -1039,12 +1035,13 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   Widget _buildDialogSectionTitle(String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF0F172A),
+        color: theme.colorScheme.primary,
       ),
     );
   }
@@ -1059,6 +1056,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         queryParameters: {
           'role': widget.user.role,
           'user_id': widget.user.id.toString(),
+          'page': currentPage.toString(),
+          'limit': itemsPerPage.toString(),
+          'search': loanSearchController.text.trim(),
+          'status': selectedStatusFilter,
         },
       );
       final assetUri = Uri.parse(loadAssetsApiUrl).replace(
@@ -1101,6 +1102,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         loanRequests
           ..clear()
           ..addAll(loadedLoans);
+        currentPage = (loanData['current_page'] as num?)?.toInt() ?? currentPage;
+        totalItems = (loanData['total_items'] as num?)?.toInt() ?? loadedLoans.length;
+        totalPages = (loanData['total_pages'] as num?)?.toInt() ?? 1;
+        summaryPendingCount =
+            (loanData['summary']?['pending_count'] as num?)?.toInt() ?? 0;
+        summaryApprovedCount =
+            (loanData['summary']?['approved_count'] as num?)?.toInt() ?? 0;
+        summaryReturnedCount =
+            (loanData['summary']?['returned_count'] as num?)?.toInt() ?? 0;
         allAssets
           ..clear()
           ..addAll(loadedAssets);
@@ -1131,6 +1141,74 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     );
   }
 
+  Widget _buildPaginationControls() {
+    final startItem = totalItems == 0
+        ? 0
+        : ((currentPage - 1) * itemsPerPage) + 1;
+    final endItem = totalItems == 0 ? 0 : startItem + loanRequests.length - 1;
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Showing $startItem-$endItem of $totalItems',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              OutlinedButton(
+                onPressed: currentPage > 1
+                    ? () {
+                        setState(() {
+                          currentPage -= 1;
+                        });
+                        loadLoanData();
+                      }
+                    : null,
+                child: const Icon(Icons.arrow_back_ios_new_outlined),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Text('Page $currentPage / $totalPages'),
+              ),
+              OutlinedButton(
+                onPressed: currentPage < totalPages
+                    ? () {
+                        setState(() {
+                          currentPage += 1;
+                        });
+                        loadLoanData();
+                      }
+                    : null,
+                child: const Icon(Icons.arrow_forward_ios_outlined),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void showLoanRequestDialog() {
     purposeController.clear();
     quantityController.clear();
@@ -1143,6 +1221,8 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
@@ -1157,12 +1237,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Pick an asset, enter the quantity, and select the loan period for approval.',
-                        style: TextStyle(fontSize: 12.5),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1192,13 +1275,15 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(color: colorScheme.outlineVariant),
                         ),
-                        child: const Text(
+                        child: Text(
                           'No items in basket yet. Search and add assets before submitting.',
-                          style: TextStyle(color: Colors.black54),
+                          style: TextStyle(
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
                         ),
                       )
                     else
@@ -1207,9 +1292,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(color: colorScheme.outlineVariant),
                           ),
                           child: Row(
                             children: [
@@ -1226,9 +1311,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '${item.asset.category} | Qty: ${item.quantity}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.black54,
+                                        color: theme.textTheme.bodySmall?.color,
                                       ),
                                     ),
                                   ],
@@ -1327,6 +1412,8 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setPickerState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
             final filteredAssets = availableAssets.where((asset) {
               final search = searchController.text.trim().toLowerCase();
               if (search.isEmpty) return true;
@@ -1354,7 +1441,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Column(
@@ -1372,7 +1459,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                             'Search by name, category, or description and add items into your loan basket.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.black.withValues(alpha: 0.7),
+                              color: theme.textTheme.bodyMedium?.color,
                             ),
                           ),
                         ],
@@ -1391,10 +1478,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                       children: [
                         Text(
                           '${filteredAssets.length} item${filteredAssets.length == 1 ? '' : 's'} found',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: Colors.black54,
+                            color: theme.textTheme.bodySmall?.color,
                           ),
                         ),
                         const Spacer(),
@@ -1415,27 +1502,29 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                           ? Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: colorScheme.outlineVariant),
                               ),
-                              child: const Column(
+                              child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.search_off_outlined,
                                     size: 40,
-                                    color: Colors.black38,
+                                    color: theme.textTheme.bodySmall?.color,
                                   ),
-                                  SizedBox(height: 10),
-                                  Text(
+                                  const SizedBox(height: 10),
+                                  const Text(
                                     'No matching assets found',
                                     style: TextStyle(fontWeight: FontWeight.w700),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
                                     'Try another keyword or browse all items.',
-                                    style: TextStyle(color: Colors.black54),
+                                    style: TextStyle(
+                                      color: theme.textTheme.bodySmall?.color,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1455,12 +1544,12 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                                     : const Color(0xFF166534);
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 8),
-                                  color: Colors.white,
+                                  color: colorScheme.surface,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                     side: BorderSide(
-                                      color: Colors.grey.shade200,
+                                      color: colorScheme.outlineVariant,
                                     ),
                                   ),
                                   child: Padding(
@@ -1475,7 +1564,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                                           child: Container(
                                             width: 64,
                                             height: 64,
-                                            color: const Color(0xFFF1F5F9),
+                                            color: colorScheme.surfaceContainerHighest,
                                             child: imageUrl != null
                                                 ? Image.network(
                                                     imageUrl,
@@ -1534,9 +1623,9 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                                                   maxLines: 2,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 12,
-                                                    color: Colors.black54,
+                                                    color: theme.textTheme.bodySmall?.color,
                                                     height: 1.3,
                                                   ),
                                                 ),
@@ -1732,6 +1821,8 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -1739,13 +1830,13 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF1E3A8A)),
+            Icon(icon, size: 18, color: colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1753,10 +1844,10 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1772,12 +1863,21 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
   }
 
   InputDecoration _buildDialogInputDecoration(String label) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: colorScheme.surfaceContainerHighest,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
     );
   }
@@ -1862,6 +1962,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -1879,7 +1980,7 @@ class _LoanmanScreenState extends State<LoanmanScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(

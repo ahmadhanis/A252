@@ -202,8 +202,10 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                                                 request.details,
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.black54,
+                                                style: TextStyle(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodyMedium?.color,
                                                   height: 1.3,
                                                 ),
                                               ),
@@ -604,20 +606,21 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
   }
 
   Widget _buildCompactRow({required IconData icon, required String label}) {
+    final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade700),
+        Icon(icon, size: 16, color: theme.textTheme.bodySmall?.color),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               height: 1.2,
-              color: Colors.black87,
+              color: theme.textTheme.bodyMedium?.color,
             ),
           ),
         ),
@@ -626,6 +629,7 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
   }
 
   Widget _buildActionInfoRow(String label, String value) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -633,16 +637,20 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.black54,
+              color: theme.textTheme.bodySmall?.color,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontSize: 13, height: 1.35),
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: theme.textTheme.bodyMedium?.color,
+            ),
           ),
         ],
       ),
@@ -698,6 +706,8 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final colorScheme = theme.colorScheme;
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
           titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
@@ -712,7 +722,10 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                     const SizedBox(height: 4),
                     Text(
                       request.title,
-                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.textTheme.bodySmall?.color,
+                      ),
                     ),
                   ],
                 ),
@@ -738,11 +751,12 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Request Summary',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
+                            color: colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -808,6 +822,8 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
@@ -822,12 +838,15 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Request services such as laser cutting, 3D printing, soldering, assembly, or consultation.',
-                        style: TextStyle(fontSize: 12.5),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -913,6 +932,8 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
@@ -930,7 +951,7 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Column(
@@ -1157,6 +1178,8 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -1164,13 +1187,13 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade400),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF1E3A8A)),
+            Icon(icon, size: 18, color: colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1178,10 +1201,10 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1197,12 +1220,21 @@ class _ServicereqScreenState extends State<ServicereqScreen> {
   }
 
   InputDecoration _buildDialogInputDecoration(String label) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: colorScheme.surfaceContainerHighest,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
     );
   }

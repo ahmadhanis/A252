@@ -29,8 +29,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white, // clean background
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -45,23 +47,22 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 20),
 
             // 🔹 APP NAME
-            const Text(
+            Text(
               "MCMC AssetHub",
-              style: TextStyle(
-                fontSize: 22,
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E3A8A), // dark blue
+                color: colorScheme.primary,
               ),
             ),
 
             const SizedBox(height: 10),
 
             // 🔹 TAGLINE (optional)
-            const Text(
+            Text(
               "Smart Inventory System",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
 

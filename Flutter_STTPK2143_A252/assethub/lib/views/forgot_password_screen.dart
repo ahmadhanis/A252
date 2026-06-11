@@ -18,10 +18,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   String get apiUrl => ApiPath.endpoint("forgot_password.php");
 
   InputDecoration _buildFieldDecoration() {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: "Email",
-      prefixIcon: const Icon(Icons.email_outlined),
+      prefixIcon: Icon(
+        Icons.email_outlined,
+        color: colorScheme.onSurfaceVariant,
+      ),
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+      ),
     );
   }
 
@@ -107,10 +121,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
     final formWidth = getResponsiveWidth(screenWidth);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Forgot Password")),
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -119,22 +135,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               width: formWidth,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: screenWidth > 600
-                    ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.10),
+                          blurRadius: 10,
+                        ),
+                      ]
                     : [],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     "Reset Your Password",
-                    style: TextStyle(
-                      fontSize: 24,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E3A8A),
+                      color: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -142,12 +162,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       "Enter your registered email and AssetHub will send you a password reset link.",
-                      style: TextStyle(fontSize: 12.5),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: theme.textTheme.bodyMedium?.color,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),

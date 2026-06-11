@@ -31,11 +31,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     Widget? suffixIcon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: labelText,
-      prefixIcon: Icon(icon),
+      prefixIcon: Icon(icon, color: colorScheme.onSurfaceVariant),
       suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: colorScheme.surfaceContainerHighest,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+      ),
     );
   }
 
@@ -147,9 +158,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         mediaQuery.padding.bottom -
         mediaQuery.viewInsets.bottom;
     final formWidth = getResponsiveWidth(screenWidth);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -166,10 +179,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: formWidth,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: screenWidth > 600
-                        ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              blurRadius: 10,
+                            ),
+                          ]
                         : [],
                   ),
                   child: Column(
@@ -178,12 +196,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Center(child: Image.asset('assets/logo.png', width: 100)),
                       const SizedBox(height: 25),
-                      const Text(
+                      Text(
                         "Create Account",
-                        style: TextStyle(
-                          fontSize: 24,
+                        style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
+                          color: colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -191,12 +208,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
+                        child: Text(
                           "After registration, AssetHub will send an onboarding email with a 6-digit OTP and confirmation link. You must verify your email before logging in.",
-                          style: TextStyle(fontSize: 12.5),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -326,13 +346,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text("Already have an account? "),
+                          Text(
+                            "Already have an account? ",
+                            style: TextStyle(
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
-                            child: const Text(
+                            child: Text(
                               "Login",
                               style: TextStyle(
-                                color: Color(0xFFFACC15),
+                                color: colorScheme.secondary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

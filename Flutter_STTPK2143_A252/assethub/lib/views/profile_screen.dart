@@ -171,6 +171,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
             Future<void> submitPasswordChange() async {
               final oldPassword = oldPasswordController.text;
               final newPassword = newPasswordController.text;
@@ -295,12 +297,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
+                      child: Text(
                         "Enter your current password, then confirm your new password. Your new password must be at least 6 characters.",
-                        style: TextStyle(fontSize: 12.5, height: 1.35),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -310,9 +316,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: "Old Password",
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        prefixIcon: Icon(
+                          Icons.lock_outline,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: colorScheme.surfaceContainerHighest,
                         suffixIcon: IconButton(
                           onPressed: () {
                             setDialogState(
@@ -328,6 +337,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colorScheme.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -337,9 +357,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: "New Password",
-                        prefixIcon: const Icon(Icons.lock_reset_outlined),
+                        prefixIcon: Icon(
+                          Icons.lock_reset_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: colorScheme.surfaceContainerHighest,
                         suffixIcon: IconButton(
                           onPressed: () {
                             setDialogState(
@@ -355,6 +378,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colorScheme.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -369,9 +403,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                       decoration: InputDecoration(
                         labelText: "Confirm New Password",
-                        prefixIcon: const Icon(Icons.verified_user_outlined),
+                        prefixIcon: Icon(
+                          Icons.verified_user_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: colorScheme.surfaceContainerHighest,
                         suffixIcon: IconButton(
                           onPressed: () {
                             setDialogState(
@@ -388,6 +425,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colorScheme.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: colorScheme.primary,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
